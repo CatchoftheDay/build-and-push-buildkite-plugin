@@ -1,0 +1,16 @@
+steps:
+  - group: Lint
+    steps:
+      - command: make lint-plugin
+        label: "Lint Plugin"
+      
+      - command: make lint-shell
+        label: "Lint :bash:"
+
+      - command: make lint-python
+        label: "Lint :python:"
+        key: lint-python
+  
+  - command: make tests
+    label: "Test"
+    depends_on: lint-python

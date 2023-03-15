@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+
+python3 -m venv .venv
+
+# shellcheck disable=SC1091
+. .venv/bin/activate
+
+pip3 install -r "$(dirname "${BASH_SOURCE[0]}")/../requirements.txt"
+
+python3 "$(dirname "${BASH_SOURCE[0]}")/../pipeline/pipeline.py"
+
+# We use a dry-run to both validate the pipeline and to replace any env vars present before
+# providing it as a buildkite artifact.
+buildkite-agent pipeline upload --dry-run pipeline.yaml > build_pipeline.yaml
+buildkite-agent artifact upload build_pipeline.yaml
+
+buildkite-agent pipeline upload build_pipeline.yaml
