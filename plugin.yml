@@ -1,0 +1,25 @@
+name: build-and-push
+description: A plugin to help with building, publishing and scanning container images
+author: Dylan Smith
+requirements:
+  - docker
+configuration:
+  properties:
+    dockerfile:
+      type: string
+    dockerfile-path:
+      type: string
+    image-tag:
+      type: string
+    image-name:
+      type: string
+    build-args:
+      type: string
+    build-x86:
+      type: boolean
+    build-arm:
+      type: boolean
+    scan-image:
+      type: boolean
+  required: []
+  additionalProperties: false
