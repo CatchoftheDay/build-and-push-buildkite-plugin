@@ -14,8 +14,8 @@ PLUGIN_ENV_PREFIX: str = f"BUILDKITE_PLUGIN_{PLUGIN_NAME.upper()}_"
 
 BUILD_PLATFORMS: Dict[str, str] = {
     # platform => buildkite agent name
-    'arm': 'docker-arm',
-    'x86': 'docker',
+    'arm': 'aws/docker-arm',
+    'x86': 'aws/docker',
 }
 
 def process_env_to_config() -> Dict[str, Any]:
