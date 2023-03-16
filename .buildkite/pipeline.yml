@@ -2,15 +2,17 @@ steps:
   - group: Lint
     steps:
       - command: make lint-plugin
-        label: "Lint Plugin"
+        label: "Lint :buildkite: plugin configuration"
       
       - command: make lint-shell
-        label: "Lint :bash:"
+        label: "Lint :bash: scripts"
 
       - command: make lint-python
-        label: "Lint :python:"
+        label: "Lint :python: scripts"
         key: lint-python
-  
-  - command: make tests
-    label: "Test"
-    depends_on: lint-python
+
+  - group: Tests
+    steps:
+      - command: make tests
+        label: "Test :python: tests"
+        depends_on: lint-python
