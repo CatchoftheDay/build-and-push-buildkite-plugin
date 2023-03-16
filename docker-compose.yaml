@@ -1,0 +1,31 @@
+version: "3"
+services:
+  lint-plugin:
+    image: buildkite/plugin-linter
+    volumes:
+      - ".:/plugin"
+    command: 
+      - --id 
+      - "ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git"
+
+  lint-shell:
+    image: koalaman/shellcheck
+    volumes:
+      - ".:/plugin"
+    command:
+      - -x
+      - /plugin/hooks/command
+
+  lint-python:
+    image: python:3.7
+    volumes:
+      - ".:/plugin:ro"
+    working_dir: /plugin
+    command: sh -c "python3 -m pip install -r requirements.dev.txt && python3 -m pylint pipeline/pipeline.py --ignore-long-lines \".*\""
+
+  tests-python:
+    image: python:3.7
+    volumes:
+      - ".:/plugin:ro"
+    working_dir: /plugin
+    command: sh -c "python3 -m pip install -r requirements.txt && python3 -m unittest discover -s pipeline"
