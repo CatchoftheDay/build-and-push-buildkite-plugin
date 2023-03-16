@@ -1,18 +1,17 @@
 .PHONY: lint lint-shell lint-plugin lint-python tests tests-python run check_% _check_% _check_variableexists_% _check_variablenowhitespace_%
 lint-shell:
-	docker run --rm -v "$(shell pwd)":/plugin koalaman/shellcheck -x /plugin/hooks/command
+	docker-compose run --rm lint-shell
 
 lint-plugin:
-	docker run --rm -v "$(shell pwd)":/plugin buildkite/plugin-linter --id "ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git"
+	docker-compose run --rm lint-plugin 
 
-lint-python: .venv
-	sh -c ". .venv/bin/activate && python3 -m pip install -r requirements.dev.txt"
-	sh -c ". .venv/bin/activate && python3 -m pylint pipeline/pipeline.py --ignore-long-lines \".*\""
+lint-python:
+	docker-compose run --rm lint-python
 
 lint: lint-shell lint-plugin lint-python
 
-tests-python: .venv
-	sh -c ". .venv/bin/activate && python3 -m unittest discover -s pipeline"
+tests-python:
+	docker-compose run --rm tests-python
 
 tests: tests-python
 
