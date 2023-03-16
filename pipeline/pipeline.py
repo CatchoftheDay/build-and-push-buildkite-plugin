@@ -18,7 +18,6 @@ BUILD_PLATFORMS: Dict[str, str] = {
     'x86': 'docker',
 }
 
-
 def process_env_to_config() -> Dict[str, Any]:
     """Process buildkite plugin environment variables into a config dict"""
     config_definition: Dict[str, Any] = {
@@ -93,13 +92,13 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
     build_args = ''
     if config['build_args']:
-        build_args = ' --build-arg '.join(config['build_args'])
+        build_args = '--build-arg ' + ' --build-arg '.join(config['build_args'])
 
     step = {
         'label': f':docker: Build and push {platform} image',
         'key': f'build-push-{platform}',
         'command': [
-            f'docker buildx build --push --ssh default=$$SSH_AUTH_SOCK --build-arg {build_args} --tag {image} -f {config["dockerfile"]} {config["dockerfile_path"]}',
+            f'docker buildx build --push --ssh default {build_args} --tag {image} -f {config["dockerfile"]} {config["dockerfile_path"]}',
         ],
         'agents': {
             'queue': agent,
@@ -121,7 +120,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     return step
 
 
-def create_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
+def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to create a container manifest and push it to ECR
     
         We also delete the individual platform images as they are no longer needed.
@@ -185,7 +184,7 @@ def main():
             pipeline['steps'][0]['steps'].append(
                 create_build_step(platform, agent, config))
 
-    pipeline['steps'][0]['steps'].append(create_manifest_step(config))
+    pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
 
     pipeline['steps'].append(create_scan_step(config))
 
