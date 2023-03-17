@@ -150,7 +150,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     step['command'].extend(
-        [f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {ECR_REPO_PREFIX}/{config["image_name"]} --image-ids TAG="{config["image_tag"]}-{platform}"' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']])
+        [f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {ECR_REPO_PREFIX}/{config["image_name"]} --image-ids imageTag="{config["image_tag"]}-{platform}"' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']])
 
     return step
 
