@@ -138,6 +138,15 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
             f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]} {" ".join(images)}',
             f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}',
         ],
+        'plugins': [
+            {
+                'ecr#v2.7.0': {
+                    'login': 'true',
+                    'account_ids': ECR_ACCOUNT,
+                    'region': ECR_REGION,
+                },
+            }
+        ],
     }
 
     step['command'].extend(
@@ -162,6 +171,15 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
         'agents': {
             'queue': 'docker',
         },
+        'plugins': [
+            {
+                'ecr#v2.7.0': {
+                    'login': 'true',
+                    'account_ids': ECR_ACCOUNT,
+                    'region': ECR_REGION,
+                },
+            }
+        ],
     }
 
     return step
