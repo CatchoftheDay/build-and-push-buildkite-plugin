@@ -88,7 +88,7 @@ def process_env_to_config() -> Dict[str, Any]:
 
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
-    image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}-{platform}'
+    image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
 
     build_args = ''
     if config['build_args']:
@@ -125,7 +125,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     
         We also delete the individual platform images as they are no longer needed.
     """
-    images: List[str] = [f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
+    images: List[str] = [f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
                          if config[f'build_{platform}']]
     dependencies: List[str] = [
         f'build-push-{platform}' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']]
@@ -148,9 +148,6 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
             }
         ],
     }
-
-    step['command'].extend(
-        [f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {ECR_REPO_PREFIX}/{config["image_name"]} --image-ids imageTag="{config["image_tag"]}-{platform}"' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']])
 
     return step
 
