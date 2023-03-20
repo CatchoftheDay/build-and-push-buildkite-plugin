@@ -162,6 +162,7 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
         'key': 'scan-container',
         'command': [
             'if [[ -z "$${RAPID7_API_KEY}" ]]; then echo "A Rapid7 API key needs to be added to your build secrets as RAPID7_API_KEY"; exit 1; fi',
+            f'docker pull {image}',
             f'docker save {image} -o "{config["image_name"]}.tar"',
             f'docker run --rm -v $(pwd)/{config["image_name"]}.tar:/{config["image_name"]}.tar rapid7/container-image-scanner:latest -f=/{config["image_name"]}.tar -k=$$RAPID7_API_KEY -r=au --buildId "{config["image_tag"]}" --buildName {config["image_name"]}',
         ],
