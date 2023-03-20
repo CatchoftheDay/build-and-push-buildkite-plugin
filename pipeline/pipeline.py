@@ -166,7 +166,7 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
             f'docker run --rm -v $(pwd)/docker_image.tar:/docker_image.tar rapid7/container-image-scanner:latest -f=/docker_image.tar -k=$$RAPID7_API_KEY -r=au --buildId "{config["image_tag"]}" --buildName {config["image_name"]}',
         ],
         'agents': {
-            'queue': 'docker',
+            'queue': 'aws/docker',
         },
         'plugins': [
             {
