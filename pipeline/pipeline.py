@@ -10,7 +10,7 @@ ECR_REPO_PREFIX: str = "catch"
 ECR_REGION: str = "ap-southeast-2"
 
 PLUGIN_NAME: str = "build-and-push"
-PLUGIN_ENV_PREFIX: str = f"BUILDKITE_PLUGIN_{PLUGIN_NAME.upper()}_"
+PLUGIN_ENV_PREFIX: str = f"BUILDKITE_PLUGIN_{PLUGIN_NAME.upper().replace('-', '_')}_"
 
 BUILD_PLATFORMS: Dict[str, str] = {
     # platform => buildkite agent name
