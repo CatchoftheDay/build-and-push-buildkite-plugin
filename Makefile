@@ -1,17 +1,17 @@
 .PHONY: lint lint-shell lint-plugin lint-python tests tests-python run check_% _check_% _check_variableexists_% _check_variablenowhitespace_%
 lint-shell:
-	docker-compose run --rm lint-shell
+	docker compose run --rm lint-shell
 
 lint-plugin:
-	docker-compose run --rm lint-plugin 
+	docker compose run --rm lint-plugin 
 
 lint-python:
-	docker-compose run --rm lint-python
+	docker compose run --rm lint-python
 
 lint: lint-shell lint-plugin lint-python
 
 tests-python:
-	docker-compose run --rm tests-python
+	docker compose run --rm tests-python
 
 tests: tests-python
 
