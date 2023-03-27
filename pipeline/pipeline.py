@@ -53,6 +53,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': True,
         },
+        'group_key': {
+            'type': 'string',
+            'default': 'build-and-push',
+        },
     }
 
     config = {}
@@ -191,7 +195,7 @@ def main():
     pipeline['steps'] = []
     pipeline['steps'].append({
         'group': ':docker: Build and push images',
-        'key': 'build-and-push',
+        'key': config['group_key'],
         'steps': [],
     })
 

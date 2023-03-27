@@ -2,7 +2,7 @@
 
 A concise plugin to assist with build multi-arch container images and pushing them to an ECR repository.
 
-Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensure that image building and pushing is complete before continuing.
+Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensure that image building and pushing is complete before continuing (see [`group-key`](#group-key-string) for configuring this value).
 
 ## Usage
 ```yaml
@@ -27,6 +27,7 @@ steps:
         build-arm: true
         build-x86: true
         scan-image: true
+        group-key: build-and-push-0.0.1
 ```
 
 
@@ -53,3 +54,6 @@ Should we build an x86 image? Default: `true`
 
 ### `scan-image` [boolean]
 Should the container image be scanned with the Rapid 7 scanner? This step is non-blocking (but this may change in the future). Default: `true`
+
+### `group-key` [string]
+This is the key assigned to the job group that encapsulates the build tasks. This key is used by subsequent jobs that depend this build completing. Default: `build-and-push`

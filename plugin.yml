@@ -21,5 +21,7 @@ configuration:
       type: boolean
     scan-image:
       type: boolean
+    group-key:
+      type: string
   required: []
   additionalProperties: false
