@@ -100,7 +100,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
     step = {
         'label': f':docker: Build and push {platform} image',
-        'key': f'build-push-{platform}',
+        'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx build --push --ssh default {build_args} --tag {image} -f {config["dockerfile"]} {config["dockerfile_path"]}',
         ],
@@ -132,12 +132,12 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     images: List[str] = [f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
                          if config[f'build_{platform}']]
     dependencies: List[str] = [
-        f'build-push-{platform}' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']]
+        f'{config["group_key"]}-build-push-{platform}' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']]
 
     step = {
         'label': ':docker: Create container manifest',
         'depends_on': dependencies,
-        'key': 'create-container-manifest',
+        'key': f'{config["group_key"]}-manifest',
         'command': [
             f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]} {" ".join(images)}',
             f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}',
@@ -163,7 +163,7 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
     step = {
         'label': ':docker: Scan container with Rapid7',
         'depends_on': "create-container-manifest",
-        'key': 'scan-container',
+        'key': f'{config["group_key"]}-scan-container',
         'command': [
             'if [[ -z "$${RAPID7_API_KEY}" ]]; then echo "A Rapid7 API key needs to be added to your build secrets as RAPID7_API_KEY"; exit 1; fi',
             f'docker pull {image}',
