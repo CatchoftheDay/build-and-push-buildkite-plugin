@@ -49,7 +49,7 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': True,
         },
-        'scan_images': {
+        'scan_image': {
             'type': 'bool',
             'default': True,
         },
@@ -206,7 +206,8 @@ def main():
 
     pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
 
-    pipeline['steps'].append(create_scan_step(config))
+    if config['scan_image']:
+        pipeline['steps'].append(create_scan_step(config))
 
     with open('pipeline.yaml', 'w', encoding="utf8") as file:
         yaml.dump(pipeline, file, width=1000)
