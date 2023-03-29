@@ -8,8 +8,7 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.5: ~
-
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.5: ~
 ```
 
 ## Configuration
@@ -18,9 +17,9 @@ All configuration is optional.
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.5:
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.5:
         dockerfile-path: app/Dockerfile
-        dockerfile-path: "."
+        context-path: "."
         image-name: my-super-special-application
         image-tag: latest
         build-args: "secret-from-vault,not-a-secret=42"
@@ -32,7 +31,7 @@ steps:
 
 
 ### `dockerfile-path` [string]
-The relative path to the Dockerfile from the project root. Default: `Dockerfile`
+The relative path of the Dockerfile from the project root. Default: `Dockerfile`
 
 ### `context-path` [string]
 The path used as the root of the docker build environment. This effects the source location and availablility of files referenced with `ADD` in the Dockerfile. Default: `.` (the project root)

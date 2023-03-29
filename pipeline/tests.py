@@ -9,16 +9,17 @@ class TestPipelineGeneration(TestCase):
         'image_name': 'testcase',
         'image_tag': '1234567890',
         'build_args': ['arg1=42', 'arg2', 'GITHUB_TOKEN'],
-        'dockerfile': 'Dockerfile',
-        'dockerfile_path': '.',
+        'dockerfile_path': 'Dockerfile',
+        'context_path': '.',
         'build_arm': True,
         'build_x86': False,
-        'scan_images': True,
+        'scan_image': True,
+        'group_key': 'build-and-push',
     }
 
     RUNTIME_ENVS = {
-        f'{PLUGIN_ENV_PREFIX}DOCKERFILE': 'Dockerfile',
-        f'{PLUGIN_ENV_PREFIX}DOCKERFILE_PATH': '.',
+        f'{PLUGIN_ENV_PREFIX}DOCKERFILE_PATH': 'Dockerfile',
+        f'{PLUGIN_ENV_PREFIX}CONTEXT_PATH': '.',
         f'{PLUGIN_ENV_PREFIX}BUILD_ARGS': 'arg1=42,arg2',
         f'{PLUGIN_ENV_PREFIX}BUILD_ARM': 'true',
         f'{PLUGIN_ENV_PREFIX}BUILD_X86': 'false',
@@ -45,7 +46,7 @@ class TestPipelineGeneration(TestCase):
             'docker buildx build --push --ssh default --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
-        this.assertEqual(step['key'], 'build-push-arm')
+        this.assertEqual(step['key'], 'build-and-push-build-push-arm')
 
     def test_create_manifest_step(this):
         step = create_oci_manifest_step(this.config)
@@ -55,7 +56,7 @@ class TestPipelineGeneration(TestCase):
             'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
         ])
 
-        this.assertEqual(step['depends_on'], ['build-push-arm'])
+        this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm'])
 
         this.assertNotIn('agent', step)
 
@@ -70,7 +71,7 @@ class TestPipelineGeneration(TestCase):
             'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
         ])
 
-        this.assertEqual(step['depends_on'], ['build-push-arm', 'build-push-x86'])
+        this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm', 'build-and-push-build-push-x86'])
 
         this.assertNotIn('agent', step)
 
