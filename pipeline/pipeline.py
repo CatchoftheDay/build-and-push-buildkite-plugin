@@ -162,7 +162,7 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
 
     step = {
         'label': ':docker: Scan container with Rapid7',
-        'depends_on': "create-container-manifest",
+        'depends_on': f'{config["group_key"]}-manifest',
         'key': f'{config["group_key"]}-scan-container',
         'command': [
             'if [[ -z "$${RAPID7_API_KEY}" ]]; then echo "A Rapid7 API key needs to be added to your build secrets as RAPID7_API_KEY"; exit 1; fi',

@@ -85,7 +85,7 @@ class TestPipelineGeneration(TestCase):
             'docker run --rm -v $(pwd)/testcase.tar:/testcase.tar rapid7/container-image-scanner:latest -f=/testcase.tar -k=$$RAPID7_API_KEY -r=au --buildId "1234567890" --buildName testcase',
         ])
 
-        this.assertEqual(step['depends_on'], 'create-container-manifest')
+        this.assertEqual(step['depends_on'], 'build-and-push-manifest')
 
 if __name__ == '__main__':
     main()
