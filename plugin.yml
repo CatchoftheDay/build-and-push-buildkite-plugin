@@ -5,9 +5,9 @@ requirements:
   - docker
 configuration:
   properties:
-    dockerfile:
-      type: string
     dockerfile-path:
+      type: string
+    context-path:
       type: string
     image-tag:
       type: string
