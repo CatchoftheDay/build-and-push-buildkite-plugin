@@ -8,7 +8,7 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.3: ~
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.5: ~
 
 ```
 
@@ -18,7 +18,7 @@ All configuration is optional.
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.3:
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.5:
         dockerfile-path: app/Dockerfile
         dockerfile-path: "."
         image-name: my-super-special-application
