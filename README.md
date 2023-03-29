@@ -19,7 +19,7 @@ All configuration is optional.
 steps:
   - plugins:
     - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#0.0.3:
-        dockerfile: Dockerfile
+        dockerfile-path: app/Dockerfile
         dockerfile-path: "."
         image-name: my-super-special-application
         image-tag: latest
@@ -31,11 +31,11 @@ steps:
 ```
 
 
-### `dockerfile` [string]
-The name of the Dockerfile to build. Default: `Dockerfile`
-
 ### `dockerfile-path` [string]
-A path relative to the repository root directory to find the Dockerfile. Default: `.`
+The relative path to the Dockerfile from the project root. Default: `Dockerfile`
+
+### `context-path` [string]
+The path used as the root of the docker build environment. This effects the source location and availablility of files referenced with `ADD` in the Dockerfile. Default: `.` (the project root)
 
 ### `image-name` [string]
 The name of your application image. Will be prefixed with `catch/` before being pushed to the registry. Default: Buildkite pipeline name (`$BUILDKITE_PIPELINE_NAME`).

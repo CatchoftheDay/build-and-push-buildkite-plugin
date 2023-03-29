@@ -21,11 +21,11 @@ BUILD_PLATFORMS: Dict[str, str] = {
 def process_env_to_config() -> Dict[str, Any]:
     """Process buildkite plugin environment variables into a config dict"""
     config_definition: Dict[str, Any] = {
-        'dockerfile': {
+        'dockerfile_path': {
             'type': 'string',
             'default': 'Dockerfile',
         },
-        'dockerfile_path': {
+        'context_path': {
             'type': 'string',
             'default': '.',
         },
@@ -102,7 +102,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
-            f'docker buildx build --push --ssh default {build_args} --tag {image} -f {config["dockerfile"]} {config["dockerfile_path"]}',
+            f'docker buildx build --push --ssh default {build_args} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
