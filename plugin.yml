@@ -11,6 +11,8 @@ configuration:
       type: string
     image-tag:
       type: string
+    additional-tag:
+      type: string
     image-name:
       type: string
     build-args:

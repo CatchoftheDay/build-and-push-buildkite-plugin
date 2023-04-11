@@ -37,6 +37,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'string',
             'default': os.environ['BUILDKITE_COMMIT'][0:10],
         },
+        'additional_tag': {
+            'type': 'string',
+            'default': None,
+        },
         'build_args': {
             'type': 'list',
             'default': [],
@@ -159,6 +163,12 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
             }
         ],
     }
+
+    if config['additional_tag']:
+        step['command'].append(
+            f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]} {" ".join(images)}')
+        step['command'].append(
+            f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]}')
 
     return step
 

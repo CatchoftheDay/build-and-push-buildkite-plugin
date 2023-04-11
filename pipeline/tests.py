@@ -15,6 +15,7 @@ class TestPipelineGeneration(TestCase):
         'build_x86': False,
         'scan_image': True,
         'group_key': 'build-and-push',
+        'additional_tag': None,
     }
 
     RUNTIME_ENVS = {
