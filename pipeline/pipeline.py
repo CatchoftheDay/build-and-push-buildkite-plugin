@@ -87,7 +87,14 @@ def process_env_to_config() -> Dict[str, Any]:
 
     config['build_args'].append("GITHUB_TOKEN")
 
+    config['group_key'] = sanitise_step_key(config['group_key'])
+
     return config
+
+
+def sanitise_step_key(key: str) -> str:
+    """Step keys only accept alphanumeric characters, underscores, dashes and colons"""
+    return ''.join([c for c in key if c.isalnum() or c in ['_', '-', ':']])
 
 
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
