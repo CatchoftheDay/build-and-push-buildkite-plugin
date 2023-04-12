@@ -8,7 +8,7 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.7: ~
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.8: ~
 ```
 
 ## Configuration
@@ -17,7 +17,7 @@ All configuration is optional.
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.7:
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.8:
         dockerfile-path: app/Dockerfile
         context-path: "."
         image-name: my-super-special-application
@@ -28,6 +28,7 @@ steps:
         build-x86: true
         scan-image: true
         group-key: build-and-push-0.0.1
+        always-pull: false
 ```
 
 
@@ -60,3 +61,6 @@ Should the container image be scanned with the Rapid 7 scanner? This step is non
 
 ### `group-key` [string]
 This is the key assigned to the job group that encapsulates the build tasks. This key is used by subsequent jobs that depend this build completing. Default: `build-and-push`
+
+### `always-pull` [boolean]
+Should the builder always attempt to pull fresh source images. This will ensure it always uses the latest available version of an image tag. Can be disabled to potentially improve build times _slightly_ if there is low risk of the upstream tagged image being updated. Default: `true`

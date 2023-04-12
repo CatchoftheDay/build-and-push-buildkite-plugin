@@ -61,6 +61,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'string',
             'default': 'build-and-push',
         },
+        'always_pull': {
+            'type': 'bool',
+            'default': True,
+        },
     }
 
     config = {}
@@ -105,15 +109,19 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     """Create a step stub to build and push a container image for a given platform"""
     image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
 
-    build_args = ''
+    build_args: str = ''
     if config['build_args']:
         build_args = '--build-arg ' + ' --build-arg '.join(config['build_args'])
+
+    pull_stub: str = ''
+    if config['always_pull']:
+        pull_stub = '--pull'
 
     step = {
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
-            f'docker buildx build --push --ssh default {build_args} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build --push {pull_stub} --ssh default {build_args} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
@@ -136,10 +144,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
 
 def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Create a step stub to create a container manifest and push it to ECR
-    
-        We also delete the individual platform images as they are no longer needed.
-    """
+    """Create a step stub to create a container manifest and push it to ECR"""
     images: List[str] = [f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
                          if config[f'build_{platform}']]
     dependencies: List[str] = [

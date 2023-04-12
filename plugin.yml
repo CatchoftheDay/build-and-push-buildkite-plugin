@@ -25,5 +25,7 @@ configuration:
       type: boolean
     group-key:
       type: string
+    always-pull:
+      type: boolean
   required: []
   additionalProperties: false
