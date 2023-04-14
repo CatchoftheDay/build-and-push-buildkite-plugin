@@ -64,3 +64,94 @@ This is the key assigned to the job group that encapsulates the build tasks. Thi
 
 ### `always-pull` [boolean]
 Should the builder always attempt to pull fresh source images. This will ensure it always uses the latest available version of an image tag. Can be disabled to potentially improve build times _slightly_ if there is low risk of the upstream tagged image being updated. Default: `true`
+
+### `composer-cache` [boolean]
+Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `vendor`) when building the image. The cache **_must_** be available at `.composer-cache`. The cache will be made available as a build context called `composer-cache` (see [utilising-package-caches](#utilising-package-caches) for how to take advantag of this in your builds). If the image builds successfully the cache will be resaved at `pipeline` level so it can be reused as a base even if the manifest changes. See the [buildkite cache plugin](https://github.com/buildkite-plugins/cache-buildkite-plugin) for further details of how this works. Default: `false`
+
+#### example
+```yaml
+  - label: cache-composer-deps
+    command: |
+      composer config -g github-oauth.github.com $${GITHUB_TOKEN};
+      composer config -g cache-dir ./.composer-cache;
+      composer install --download-only;
+    plugins:
+      - docker#v5.6.0:
+          image: "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/php-base:8.1-fpm-buster"
+          always-pull: true
+          mount-ssh-agent: true
+          propagate-environment: true
+          environment:
+            - GITHUB_TOKEN
+      - cache#v0.3.2:
+          backend: s3
+          manifest: composer.lock
+          path: .composer-cache
+          save: file
+          restore: pipeline
+  - label: ":docker: Build and upload container to ECR"
+    branches: testing master
+    plugins:
+      - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.8:
+          composer-cache: true
+```
+
+### `npm-cache` [boolean]
+Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_modules`) when building the image. The cache **_must_** be available at `.npm-cache`. The cache will be made available as a build-context called `npm-cache` (see [utilising-package-caches](#utilising-package-caches) for how to take advantag of this in your builds). If the image builds successfully the cache will be resaved at `pipeline` level so it can be reused as a base even if the manifest changes. See the [buildkite cache plugin](https://github.com/buildkite-plugins/cache-buildkite-plugin) for further details of how this works. Default: `false`
+
+#### example
+```yaml
+  - label: cache-node-deps
+    command: |
+      echo "//npm.pkg.github.com/:_authToken=$${GITHUB_TOKEN}" > ~/.npmrc;
+      npm config set -g cache ./.npm-cache;
+      npm ci;
+    plugins:
+      - docker#v5.6.0:
+          image: "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/node-base:18-buster-slim"
+          always-pull: true
+          mount-ssh-agent: true
+          propagate-environment: true
+          environment:
+            - GITHUB_TOKEN
+      - cache#v0.3.2:
+          backend: s3
+          manifest: package-lock.json
+          path: .npm-cache
+          save: file
+          restore: pipeline
+  - label: ":docker: Build and upload container to ECR"
+    branches: testing master
+    plugins:
+      - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.8:
+          npm-cache: true
+```
+
+## Utilising package caches
+
+Only including the `composer-cache: true` or `npm-cache: true` flags isn't sufficient to take advantage of your package cache. The projects Dockerfile will also need to contain something like the following when performing the install step with the package manager:
+
+#### composer
+
+```Dockerfile
+RUN --mount=type=cache,from=composer-cache,target=/root/.composer/cache \
+    set -ex && \
+    composer install \
+        --no-scripts \
+        --no-progress \
+        --no-suggest \
+        --prefer-dist \
+        --no-dev \
+        --no-autoloader \
+        --no-interaction
+```
+
+#### npm
+
+```Dockerfile
+RUN --mount=type=cache,from=npm-cache,target=/root/.npm \
+    set -ex && \
+    npm ci
+```
+
+This will ensure that package files are picked up from the cache rather than being redownloaded from the internet.

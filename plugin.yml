@@ -27,5 +27,9 @@ configuration:
       type: string
     always-pull:
       type: boolean
+    composer-cache:
+      type: boolean
+    npm-cache:
+      type: boolean
   required: []
   additionalProperties: false

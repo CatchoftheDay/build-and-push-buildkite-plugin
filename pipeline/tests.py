@@ -17,6 +17,8 @@ class TestPipelineGeneration(TestCase):
         'group_key': 'build-and-push',
         'additional_tag': None,
         'always_pull': True,
+        'composer_cache': False,
+        'npm_cache': False,
     }
 
     RUNTIME_ENVS = {
@@ -45,7 +47,7 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(step['label'], ':docker: Build and push arm image')
         this.assertEqual(step['agents'], {'queue': 'docker-arm'})
         this.assertEqual(step['command'], [
-            'docker buildx build --push --pull --ssh default --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            'docker buildx build --push --pull --ssh default --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')
