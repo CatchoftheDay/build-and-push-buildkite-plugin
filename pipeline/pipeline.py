@@ -65,6 +65,14 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': True,
         },
+        'composer_cache': {
+            'type': 'bool',
+            'default': False,
+        },
+        'npm_cache': {
+            'type': 'bool',
+            'default': False,
+        },
     }
 
     config = {}
@@ -117,11 +125,19 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['always_pull']:
         pull_stub = '--pull'
 
+    composer_cache_stub: str = ''
+    if config['composer_cache']:
+        composer_cache_stub = '--build-context composer-cache=.composer-cache'
+
+    npm_cache_stub: str = ''
+    if config['npm_cache']:
+        npm_cache_stub = '--build-context npm-cache=.npm-cache'
+
     step = {
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
-            f'docker buildx build --push {pull_stub} --ssh default {build_args} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build --push {pull_stub} --ssh default {build_args} {composer_cache_stub} {npm_cache_stub} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
@@ -139,6 +155,34 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
             },
         ],
     }
+
+    if config['composer_cache']:
+        step['command'].insert(0, 'mkdir -p .composer-cache')
+        step['command'].insert(0, 'echo ".composer-cache" >> .dockerignore')
+        step['plugins'].append({
+                'cache#v0.3.2': {
+                    'backend': 's3',
+                    'manifest': 'composer.lock',
+                    'path': '.composer-cache',
+                    'restore': 'file',
+                    'save': 'pipeline'
+                },
+            }
+        )
+
+    if config['npm_cache']:
+        step['command'].insert(0, 'mkdir -p .npm-cache')
+        step['command'].insert(0, 'echo ".npm-cache" >> .dockerignore')
+        step['plugins'].append({
+                'cache#v0.3.2': {
+                    'backend': 's3',
+                    'manifest': 'package-lock.json',
+                    'path': '.npm-cache',
+                    'restore': 'file',
+                    'save': 'pipeline'
+                },
+            }
+        )
 
     return step
 
