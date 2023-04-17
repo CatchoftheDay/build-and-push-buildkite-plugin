@@ -129,7 +129,7 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
 
 ## Utilising package caches
 
-Only including the `composer-cache: true` or `npm-cache: true` flags isn't sufficient to take advantage of your package cache. The projects Dockerfile will also need to contain something like the following when performing the install step with the package manager:
+Only including the `composer-cache: true` or `npm-cache: true` flags isn't sufficient to take advantage of your package cache. The projects Dockerfile will also need to contain something like the following when performing the install step with the package manager. Right now your Dockerfile will also require the line `# syntax=docker/dockerfile:1` at the top, this requirement will go away when the Docker version available on our build agents is updated.
 
 #### composer
 
