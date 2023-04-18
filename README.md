@@ -123,7 +123,7 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
   - label: ":docker: Build and upload container to ECR"
     branches: testing master
     plugins:
-      - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.8:
+      - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v0.0.9:
           npm-cache: true
 ```
 
