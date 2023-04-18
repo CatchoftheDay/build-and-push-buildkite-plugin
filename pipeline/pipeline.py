@@ -18,6 +18,8 @@ BUILD_PLATFORMS: Dict[str, str] = {
     'x86': 'aws/docker',
 }
 
+BLOCK_ON_CONTAINER_SCAN = os.environ.get('BLOCK_BUILD_AND_PUSH_ON_SCAN', 'false').lower() == 'true'
+
 def process_env_to_config() -> Dict[str, Any]:
     """Process buildkite plugin environment variables into a config dict"""
     config_definition: Dict[str, Any] = {
@@ -273,7 +275,10 @@ def main():
     pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
 
     if config['scan_image']:
-        pipeline['steps'].append(create_scan_step(config))
+        if BLOCK_ON_CONTAINER_SCAN:
+            pipeline['steps'][0]['steps'].append(create_scan_step(config))
+        else:
+            pipeline['steps'].append(create_scan_step(config))
 
     with open('pipeline.yaml', 'w', encoding="utf8") as file:
         yaml.dump(pipeline, file, width=1000)
