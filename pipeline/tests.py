@@ -30,6 +30,7 @@ class TestPipelineGeneration(TestCase):
         f'{PLUGIN_ENV_PREFIX}ARM_BUILD_REQUIRED': 'true',
         'BUILDKITE_COMMIT': '123456789010',
         'BUILDKITE_PIPELINE_NAME': 'testcase',
+        'BUILDKITE_BUILD_NUMBER': '110',
     }
 
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
@@ -79,14 +80,16 @@ class TestPipelineGeneration(TestCase):
 
         this.assertNotIn('agent', step)
 
+    @mock.patch.dict(os.environ, RUNTIME_ENVS)
     def test_create_scan_step(this):
         step = create_scan_step(this.config)
 
         this.assertEqual(step['command'], [
-            'if [[ -z "$${RAPID7_API_KEY}" ]]; then echo "A Rapid7 API key needs to be added to your build secrets as RAPID7_API_KEY"; exit 1; fi',
             'docker pull 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
-            'docker save 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 -o "testcase.tar"',
-            'docker run --rm -v $(pwd)/testcase.tar:/testcase.tar rapid7/container-image-scanner:latest -f=/testcase.tar -k=$$RAPID7_API_KEY -r=au --buildId "1234567890" --buildName testcase',
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            'chmod +x ./wizcli',
+            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
+            f'./wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --tag pipeline=testcase --tag pipeline_run=110',
         ])
 
         this.assertEqual(step['depends_on'], 'build-and-push-manifest')

@@ -229,14 +229,15 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
     image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}'
 
     step = {
-        'label': ':docker: Scan container with Rapid7',
+        'label': ':docker: Scan container for security issues',
         'depends_on': f'{config["group_key"]}-manifest',
         'key': f'{config["group_key"]}-scan-container',
         'command': [
-            'if [[ -z "$${RAPID7_API_KEY}" ]]; then echo "A Rapid7 API key needs to be added to your build secrets as RAPID7_API_KEY"; exit 1; fi',
             f'docker pull {image}',
-            f'docker save {image} -o "{config["image_name"]}.tar"',
-            f'docker run --rm -v $(pwd)/{config["image_name"]}.tar:/{config["image_name"]}.tar rapid7/container-image-scanner:latest -f=/{config["image_name"]}.tar -k=$$RAPID7_API_KEY -r=au --buildId "{config["image_tag"]}" --buildName {config["image_name"]}',
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            'chmod +x ./wizcli',
+            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
+            f'./wizcli docker scan --image {image} --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
         ],
         'agents': {
             'queue': 'aws/docker',
