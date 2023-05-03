@@ -117,7 +117,8 @@ def sanitise_step_key(key: str) -> str:
 
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
-    image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
+    platform_image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
+    cache_image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}'
 
     build_args: str = ''
     if config['build_args']:
@@ -139,7 +140,8 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
-            f'docker buildx build --push {pull_stub} --ssh default {build_args} {composer_cache_stub} {npm_cache_stub} --tag {image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker pull {cache_image} || true',
+            f'docker buildx build --push {pull_stub} --ssh default --cache-from {cache_image} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
