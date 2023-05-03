@@ -15,4 +15,4 @@ python3 "$(dirname "${BASH_SOURCE[0]}")/../pipeline/pipeline.py"
 buildkite-agent pipeline upload --dry-run pipeline.yaml > build_pipeline.yaml
 buildkite-agent artifact upload build_pipeline.yaml
 
-buildkite-agent pipeline upload build_pipeline.yaml
+buildkite-agent pipeline upload --no-interpolation build_pipeline.yaml
