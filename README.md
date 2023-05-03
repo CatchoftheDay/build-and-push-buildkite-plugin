@@ -57,7 +57,7 @@ Should we build an ARM image? Default: `true`
 Should we build an x86 image? Default: `true`
 
 ### `scan-image` [boolean]
-Should the container image be scanned with the Rapid 7 scanner? This step is non-blocking (but this may change in the future). Default: `true`
+Should the container image be scanned the security scanner? This step is non-blocking (but this may change in the future). Default: `true`
 
 ### `group-key` [string]
 This is the key assigned to the job group that encapsulates the build tasks. This key is used by subsequent jobs that depend this build completing. Default: `build-and-push`
