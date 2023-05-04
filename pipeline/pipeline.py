@@ -239,7 +239,7 @@ def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'./wizcli docker scan --image {image} --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
+            f'./wizcli docker scan --image {image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
         ],
         'agents': {
             'queue': 'aws/docker',

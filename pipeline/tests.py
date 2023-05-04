@@ -90,7 +90,7 @@ class TestPipelineGeneration(TestCase):
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'./wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --tag pipeline=testcase --tag pipeline_run=110',
+            f'./wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag pipeline_run=110',
         ])
 
         this.assertEqual(step['depends_on'], 'build-and-push-manifest')
