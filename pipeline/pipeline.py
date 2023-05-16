@@ -5,9 +5,12 @@ from typing import List, Dict, Any
 
 import yaml
 
+BUILDKIT_VERSION: str = os.environ.get('BUILD_AND_PUSH_BUILDKIT_VERSION', 'v0.11.6')
+
 ECR_ACCOUNT: str = "362995399210"
 ECR_REPO_PREFIX: str = "catch"
 ECR_REGION: str = "ap-southeast-2"
+CURRENT_BRANCH: str = os.environ.get('BUILDKITE_BRANCH') if os.environ.get('BUILDKITE_BRANCH', '') != '' else 'no-branch'
 
 PLUGIN_NAME: str = "build-and-push"
 PLUGIN_ENV_PREFIX: str = f"BUILDKITE_PLUGIN_{PLUGIN_NAME.upper().replace('-', '_')}_"
@@ -118,7 +121,14 @@ def sanitise_step_key(key: str) -> str:
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
     platform_image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
-    cache_image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}'
+
+    cache_from_tags: List[str] = sorted(set([
+        config["image_tag"],
+        CURRENT_BRANCH,
+        'master',
+        'main',
+    ]))
+    cache_from_images_stub: str = ''.join([f' --cache-from type=registry,ref={ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{tag}' for tag in cache_from_tags])
 
     build_args: str = ''
     if config['build_args']:
@@ -140,8 +150,8 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
-            f'docker pull {cache_image} || true',
-            f'docker buildx build --push {pull_stub} --ssh default --cache-from {cache_image} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
+            f'docker buildx build --push {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
@@ -222,6 +232,16 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
             f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]} {" ".join(images)}')
         step['command'].append(
             f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]}')
+        if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']):
+            step['command'].append(
+                f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
+            step['command'].append(
+                f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH}')
+    elif config['image_tag'] != CURRENT_BRANCH:
+        step['command'].append(
+            f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
+        step['command'].append(
+            f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH}')
 
     return step
 
