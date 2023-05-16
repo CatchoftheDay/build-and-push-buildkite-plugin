@@ -1,7 +1,7 @@
 import os
 from unittest import mock, main, TestCase
 
-from pipeline import create_build_step, create_oci_manifest_step, create_scan_step, process_env_to_config, PLUGIN_ENV_PREFIX
+from pipeline import create_build_step, create_oci_manifest_step, create_scan_step, process_env_to_config, PLUGIN_ENV_PREFIX, CURRENT_BRANCH, BUILDKIT_VERSION
 
 
 class TestPipelineGeneration(TestCase):
@@ -19,6 +19,7 @@ class TestPipelineGeneration(TestCase):
         'always_pull': True,
         'composer_cache': False,
         'npm_cache': False,
+        'fully_qualified_image_name': '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase',
     }
 
     RUNTIME_ENVS = {
@@ -29,6 +30,7 @@ class TestPipelineGeneration(TestCase):
         f'{PLUGIN_ENV_PREFIX}BUILD_X86': 'false',
         f'{PLUGIN_ENV_PREFIX}ARM_BUILD_REQUIRED': 'true',
         'BUILDKITE_COMMIT': '123456789010',
+        'BUILDKITE_BRANCH': 'main',
         'BUILDKITE_PIPELINE_NAME': 'testcase',
         'BUILDKITE_BUILD_NUMBER': '110',
     }
@@ -47,9 +49,10 @@ class TestPipelineGeneration(TestCase):
 
         this.assertEqual(step['label'], ':docker: Build and push arm image')
         this.assertEqual(step['agents'], {'queue': 'docker-arm'})
+        this.maxDiff = None
         this.assertEqual(step['command'], [
-            'docker pull 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 || true',
-            'docker buildx build --push --pull --ssh default --cache-from 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
+            f'docker buildx build --push --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')
@@ -60,12 +63,15 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(step['command'], [
             'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
             'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
+            f'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
+            f'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH}',
         ])
 
         this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm'])
 
         this.assertNotIn('agent', step)
 
+    @mock.patch.dict(os.environ, RUNTIME_ENVS)
     def test_create_manifest_step_multi_arch(this):
         multi_arch_config = this.config.copy()
         multi_arch_config['build_x86'] = True
@@ -75,6 +81,8 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(step['command'], [
             'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
             'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
+            f'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
+            f'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH}',
         ])
 
         this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm', 'build-and-push-build-push-x86'])
