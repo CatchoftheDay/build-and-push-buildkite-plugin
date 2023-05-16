@@ -110,6 +110,8 @@ def process_env_to_config() -> Dict[str, Any]:
 
     config['group_key'] = sanitise_step_key(config['group_key'])
 
+    config['fully_qualified_image_name'] = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}'
+
     return config
 
 
@@ -120,7 +122,7 @@ def sanitise_step_key(key: str) -> str:
 
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
-    platform_image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
+    platform_image: str = f'{config["fully_qualified_image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
 
     cache_from_tags: List[str] = sorted(set([
         config["image_tag"],
@@ -128,7 +130,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'master',
         'main',
     ]))
-    cache_from_images_stub: str = ''.join([f' --cache-from type=registry,ref={ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{tag}' for tag in cache_from_tags])
+    cache_from_images_stub: str = ''.join([f' --cache-from type=registry,ref={config["fully_qualified_image_name"]}:{tag}' for tag in cache_from_tags])
 
     build_args: str = ''
     if config['build_args']:
@@ -203,7 +205,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
 def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to create a container manifest and push it to ECR"""
-    images: List[str] = [f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:multi-platform-{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
+    images: List[str] = [f'{config["fully_qualified_image_name"]}:multi-platform-{config["image_tag"]}-{platform}' for platform, _ in BUILD_PLATFORMS.items()
                          if config[f'build_{platform}']]
     dependencies: List[str] = [
         f'{config["group_key"]}-build-push-{platform}' for platform, _ in BUILD_PLATFORMS.items() if config[f'build_{platform}']]
@@ -213,8 +215,8 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         'depends_on': dependencies,
         'key': f'{config["group_key"]}-manifest',
         'command': [
-            f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]} {" ".join(images)}',
-            f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}',
+            f'docker manifest create {config["fully_qualified_image_name"]}:{config["image_tag"]} {" ".join(images)}',
+            f'docker manifest push {config["fully_qualified_image_name"]}:{config["image_tag"]}',
         ],
         'plugins': [
             {
@@ -229,37 +231,35 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if config['additional_tag']:
         step['command'].append(
-            f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]} {" ".join(images)}')
+            f'docker manifest create {config["fully_qualified_image_name"]}:{config["additional_tag"]} {" ".join(images)}')
         step['command'].append(
-            f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["additional_tag"]}')
+            f'docker manifest push {config["fully_qualified_image_name"]}:{config["additional_tag"]}')
         if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']):
             step['command'].append(
-                f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
+                f'docker manifest create {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
             step['command'].append(
-                f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH}')
+                f'docker manifest push {config["fully_qualified_image_name"]}:{CURRENT_BRANCH}')
     elif config['image_tag'] != CURRENT_BRANCH:
         step['command'].append(
-            f'docker manifest create {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
+            f'docker manifest create {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
         step['command'].append(
-            f'docker manifest push {ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{CURRENT_BRANCH}')
+            f'docker manifest push {config["fully_qualified_image_name"]}:{CURRENT_BRANCH}')
 
     return step
 
 
 def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to scan the container image with Rapid7"""
-    image: str = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}:{config["image_tag"]}'
-
     step = {
         'label': ':docker: Scan container for security issues',
         'depends_on': f'{config["group_key"]}-manifest',
         'key': f'{config["group_key"]}-scan-container',
         'command': [
-            f'docker pull {image}',
+            f'docker pull {config["fully_qualified_image_name"]}:{config["image_tag"]}',
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'./wizcli docker scan --image {image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
+            f'./wizcli docker scan --image {config["fully_qualified_image_name"]}:{config["image_tag"]} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
         ],
         'agents': {
             'queue': 'aws/docker',
