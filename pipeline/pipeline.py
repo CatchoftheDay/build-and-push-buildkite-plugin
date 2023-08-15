@@ -215,9 +215,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         'depends_on': dependencies,
         'key': f'{config["group_key"]}-manifest',
         'command': [
-            f'docker manifest create {config["fully_qualified_image_name"]}:{config["image_tag"]} {" ".join(images)}',
-            f'docker manifest push {config["fully_qualified_image_name"]}:{config["image_tag"]}',
-        ],
+            f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{config["image_tag"]} {" ".join(images)}',        ],
         'plugins': [
             {
                 'ecr#v2.7.0': {
@@ -231,19 +229,13 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if config['additional_tag']:
         step['command'].append(
-            f'docker manifest create {config["fully_qualified_image_name"]}:{config["additional_tag"]} {" ".join(images)}')
-        step['command'].append(
-            f'docker manifest push {config["fully_qualified_image_name"]}:{config["additional_tag"]}')
+            f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{config["additional_tag"]} {" ".join(images)}')
         if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']):
             step['command'].append(
-                f'docker manifest create {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
-            step['command'].append(
-                f'docker manifest push {config["fully_qualified_image_name"]}:{CURRENT_BRANCH}')
+                f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
     elif config['image_tag'] != CURRENT_BRANCH:
         step['command'].append(
-            f'docker manifest create {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
-        step['command'].append(
-            f'docker manifest push {config["fully_qualified_image_name"]}:{CURRENT_BRANCH}')
+            f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
 
     return step
 

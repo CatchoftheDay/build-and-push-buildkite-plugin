@@ -61,10 +61,8 @@ class TestPipelineGeneration(TestCase):
         step = create_oci_manifest_step(this.config)
 
         this.assertEqual(step['command'], [
-            'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
-            'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
-            f'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
-            f'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH}',
+            'docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
+            f'docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm',
         ])
 
         this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm'])
@@ -79,10 +77,8 @@ class TestPipelineGeneration(TestCase):
         step = create_oci_manifest_step(multi_arch_config)
 
         this.assertEqual(step['command'], [
-            'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
-            'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
-            f'docker manifest create 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
-            f'docker manifest push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH}',
+            'docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
+            f'docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86',
         ])
 
         this.assertEqual(step['depends_on'], ['build-and-push-build-push-arm', 'build-and-push-build-push-x86'])
