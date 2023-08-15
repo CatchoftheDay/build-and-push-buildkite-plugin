@@ -78,6 +78,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': False,
         },
+        'attestations': {
+            'type': 'bool',
+            'default': False,
+        },
     }
 
     config = {}
@@ -148,12 +152,18 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['npm_cache']:
         npm_cache_stub = '--build-context npm-cache=.npm-cache'
 
+    attestation_stub = ''
+    if config['attestations']:
+        attestation_stub = '--sbom=true --provenance=true'
+    else:
+        attestation_stub = '--sbom=false --provenance=false'
+    
     step = {
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --push {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build {attestation_stub} --push {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
