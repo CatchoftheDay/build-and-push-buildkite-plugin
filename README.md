@@ -83,7 +83,7 @@ Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `
           propagate-environment: true
           environment:
             - GITHUB_TOKEN
-      - cache#v0.3.2:
+      - cache#v0.6.0:
           backend: s3
           manifest: composer.lock
           path: .composer-cache
@@ -92,6 +92,11 @@ Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `
   - label: ":docker: Build and upload container to ECR"
     branches: testing master
     plugins:
+      - cache#v0.6.0:
+          backend: s3
+          manifest: composer.lock
+          path: .composer-cache
+          restore: file
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.2.0:
           composer-cache: true
 ```
@@ -114,7 +119,7 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
           propagate-environment: true
           environment:
             - GITHUB_TOKEN
-      - cache#v0.3.2:
+      - cache#v0.6.0:
           backend: s3
           manifest: package-lock.json
           path: .npm-cache
@@ -123,6 +128,11 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
   - label: ":docker: Build and upload container to ECR"
     branches: testing master
     plugins:
+      - cache#v0.6.0:
+          backend: s3
+          manifest: package-lock.json
+          path: .npm-cache
+          restore: file
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.2.0:
           npm-cache: true
 ```
