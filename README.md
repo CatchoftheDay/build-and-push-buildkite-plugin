@@ -50,6 +50,9 @@ An additional tag for the image, useful if the main tag is dynamic or vis-versa.
 ### `build-args` [comma-delimited list]
 Additional build-arguments (`--build-arg`) to pass to `docker build`. These can be single values (ideally used for secrets that are available to every pipeline step as env vars) or key=value pairs which can be used to pass in non-secret values that aren't known to every step of the pipeline. Default: `""`, `GITHUB_TOKEN` is always provided.
 
+### `push-branches` [comma-delimited list]
+A list of branch names for which to push a built image to ECR. This can serve as a toggle to be able to test container builds in feature branches but only push those images to ECR for deployable branches. If the build is triggered from a non-branch event (such as a git tag) it will always be pushed to ECR. Default: `""`
+
 ### `build-arm` [boolean]
 Should we build an ARM image? Default: `true`
 
