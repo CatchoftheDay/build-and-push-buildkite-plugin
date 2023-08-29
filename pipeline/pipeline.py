@@ -78,6 +78,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': False,
         },
+        'push_branches': {
+            'type': 'list',
+            'default': [],
+        },
     }
 
     config = {}
@@ -140,6 +144,10 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['always_pull']:
         pull_stub = '--pull'
 
+    push_stub: str = ''
+    if (config['push_branches'] and CURRENT_BRANCH in config['push_branches']) or CURRENT_BRANCH == 'no-branch':
+        push_stub = '--push'
+
     composer_cache_stub: str = ''
     if config['composer_cache']:
         composer_cache_stub = '--build-context composer-cache=.composer-cache'
@@ -153,7 +161,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --push {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build {push_stub} {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,

@@ -13,6 +13,7 @@ class TestPipelineGeneration(TestCase):
         'context_path': '.',
         'build_arm': True,
         'build_x86': False,
+        'push_branches': [],
         'scan_image': True,
         'group_key': 'build-and-push',
         'additional_tag': None,
