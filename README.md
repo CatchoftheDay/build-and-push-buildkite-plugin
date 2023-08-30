@@ -92,11 +92,6 @@ Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `
   - label: ":docker: Build and upload container to ECR"
     branches: testing master
     plugins:
-      - cache#v0.6.0:
-          backend: s3
-          manifest: composer.lock
-          path: .composer-cache
-          restore: file
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.2.0:
           composer-cache: true
 ```
@@ -128,11 +123,6 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
   - label: ":docker: Build and upload container to ECR"
     branches: testing master
     plugins:
-      - cache#v0.6.0:
-          backend: s3
-          manifest: package-lock.json
-          path: .npm-cache
-          restore: file
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.2.0:
           npm-cache: true
 ```
@@ -144,7 +134,7 @@ Only including the `composer-cache: true` or `npm-cache: true` flags isn't suffi
 #### composer
 
 ```Dockerfile
-RUN --mount=type=cache,from=composer-cache,target=/root/.composer/cache \
+RUN --mount=type=cache,from=composer-cache,target=/root/.cache/composer \
     set -ex && \
     composer install \
         --no-scripts \
