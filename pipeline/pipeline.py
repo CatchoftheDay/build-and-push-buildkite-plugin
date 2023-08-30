@@ -176,7 +176,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         step['command'].insert(0, 'mkdir -p .composer-cache')
         step['command'].insert(0, 'echo ".composer-cache" >> .dockerignore')
         step['plugins'].append({
-                'cache#v0.3.2': {
+                'cache#v0.6.0': {
                     'backend': 's3',
                     'manifest': 'composer.lock',
                     'path': '.composer-cache',
@@ -190,7 +190,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         step['command'].insert(0, 'mkdir -p .npm-cache')
         step['command'].insert(0, 'echo ".npm-cache" >> .dockerignore')
         step['plugins'].append({
-                'cache#v0.3.2': {
+                'cache#v0.6.0': {
                     'backend': 's3',
                     'manifest': 'package-lock.json',
                     'path': '.npm-cache',
