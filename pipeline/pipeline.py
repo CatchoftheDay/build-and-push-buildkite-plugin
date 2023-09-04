@@ -116,6 +116,8 @@ def process_env_to_config() -> Dict[str, Any]:
 
     config['fully_qualified_image_name'] = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}'
 
+    config['push_to_ecr'] = not config['push_branches'] or CURRENT_BRANCH in config['push_branches'] or CURRENT_BRANCH == 'no-branch'
+
     return config
 
 
@@ -145,7 +147,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         pull_stub = '--pull'
 
     push_stub: str = ''
-    if (config['push_branches'] and CURRENT_BRANCH in config['push_branches']) or CURRENT_BRANCH == 'no-branch':
+    if config['push_to_ecr']:
         push_stub = '--push'
 
     composer_cache_stub: str = ''
@@ -161,7 +163,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build {push_stub} {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build --load {push_stub} {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
         ],
         'agents': {
             'queue': agent,
@@ -295,7 +297,8 @@ def main():
             pipeline['steps'][0]['steps'].append(
                 create_build_step(platform, agent, config))
 
-    pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
+    if config['push_to_ecr']:
+        pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
 
     if config['scan_image']:
         if BLOCK_ON_CONTAINER_SCAN:

@@ -13,7 +13,7 @@ class TestPipelineGeneration(TestCase):
         'context_path': '.',
         'build_arm': True,
         'build_x86': False,
-        'push_branches': [],
+        'push_branches': ['main'],
         'scan_image': True,
         'group_key': 'build-and-push',
         'additional_tag': None,
@@ -21,6 +21,7 @@ class TestPipelineGeneration(TestCase):
         'composer_cache': False,
         'npm_cache': False,
         'fully_qualified_image_name': '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase',
+        'push_to_ecr': True,
     }
 
     RUNTIME_ENVS = {
@@ -30,6 +31,7 @@ class TestPipelineGeneration(TestCase):
         f'{PLUGIN_ENV_PREFIX}BUILD_ARM': 'true',
         f'{PLUGIN_ENV_PREFIX}BUILD_X86': 'false',
         f'{PLUGIN_ENV_PREFIX}ARM_BUILD_REQUIRED': 'true',
+        f'{PLUGIN_ENV_PREFIX}PUSH_BRANCHES': 'main',
         'BUILDKITE_COMMIT': '123456789010',
         'BUILDKITE_BRANCH': 'main',
         'BUILDKITE_PIPELINE_NAME': 'testcase',
@@ -53,7 +55,7 @@ class TestPipelineGeneration(TestCase):
         this.maxDiff = None
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --push --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx build --load --push --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')
