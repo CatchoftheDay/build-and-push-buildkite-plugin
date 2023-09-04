@@ -158,6 +158,8 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['npm_cache']:
         npm_cache_stub = '--build-context npm-cache=.npm-cache'
 
+    wiz_binary_name: str = f'wizcli-linux-{"amd64" if platform == "x86" else "arm64"}'
+
     scan_steps: List[str] = []
     if config['scan_image']:
         block_sec_scan_stub: str = 'SCAN_STATUS=0'
@@ -165,7 +167,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
             block_sec_scan_stub = 'SCAN_STATUS=$$PIPESTATUS[0]'
 
         scan_steps = [
-            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            f'curl -o wizcli https://wizcli.app.wiz.io/latest/{wiz_binary_name}',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
             f'./wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; {block_sec_scan_stub}',
