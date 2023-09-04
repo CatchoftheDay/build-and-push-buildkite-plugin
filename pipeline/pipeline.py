@@ -146,9 +146,9 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['always_pull']:
         pull_stub = '--pull'
 
-    push_stub: str = ''
+    push_stub: str = 'echo "Not pushing to ECR as branch not listed in push-branches"'
     if config['push_to_ecr']:
-        push_stub = '--push'
+        push_stub = 'docker image push {platform_image}'
 
     composer_cache_stub: str = ''
     if config['composer_cache']:
@@ -158,12 +158,29 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['npm_cache']:
         npm_cache_stub = '--build-context npm-cache=.npm-cache'
 
+    scan_steps: List[str] = []
+    if config['scan_image']:
+        block_sec_scan_stub: str = 'SCAN_STATUS=0'
+        if BLOCK_ON_CONTAINER_SCAN:
+            block_sec_scan_stub = 'SCAN_STATUS=$$PIPESTATUS[0]'
+
+        scan_steps = [
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            'chmod +x ./wizcli',
+            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
+            f'./wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; {block_sec_scan_stub}',
+            f'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out)\`\`\`\n\n</details>" | buildkite-agent annotate --style info --context {platform}-image-security-scan; else echo -e "**Container scan report ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {platform}-image-security-scan; fi',
+            'test $$SCAN_STATUS -eq 0 || exit 1',
+        ]
+
     step = {
         'label': f':docker: Build and push {platform} image',
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load {push_stub} {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build --load {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            *scan_steps,
+            f'{push_stub}',
         ],
         'agents': {
             'queue': agent,
@@ -250,36 +267,6 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     return step
 
 
-def create_scan_step(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Create a step stub to scan the container image with Rapid7"""
-    step = {
-        'label': ':docker: Scan container for security issues',
-        'depends_on': f'{config["group_key"]}-manifest',
-        'key': f'{config["group_key"]}-scan-container',
-        'command': [
-            f'docker pull {config["fully_qualified_image_name"]}:{config["image_tag"]}',
-            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
-            'chmod +x ./wizcli',
-            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'./wizcli docker scan --image {config["fully_qualified_image_name"]}:{config["image_tag"]} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]}',
-        ],
-        'agents': {
-            'queue': 'aws/docker',
-        },
-        'plugins': [
-            {
-                'ecr#v2.7.0': {
-                    'login': 'true',
-                    'account_ids': ECR_ACCOUNT,
-                    'region': ECR_REGION,
-                },
-            }
-        ],
-    }
-
-    return step
-
-
 def main():
     """Generate and output to stdout a pipeline for building, pushing and scanning a multi-platform container image."""
     config = process_env_to_config()
@@ -299,12 +286,6 @@ def main():
 
     if config['push_to_ecr']:
         pipeline['steps'][0]['steps'].append(create_oci_manifest_step(config))
-
-    if config['scan_image']:
-        if BLOCK_ON_CONTAINER_SCAN:
-            pipeline['steps'][0]['steps'].append(create_scan_step(config))
-        else:
-            pipeline['steps'].append(create_scan_step(config))
 
     with open('pipeline.yaml', 'w', encoding="utf8") as file:
         yaml.dump(pipeline, file, width=1000)
