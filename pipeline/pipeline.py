@@ -173,8 +173,9 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
             'test $$SCAN_STATUS -eq 0 || exit 1',
         ]
 
+    step_label = f':docker: Build and push {platform} image' if config['push_to_ecr'] else f':docker: Build {platform} image'
     step = {
-        'label': f':docker: Build and push {platform} image',
+        'label': step_label,
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
