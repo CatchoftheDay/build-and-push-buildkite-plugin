@@ -1,7 +1,7 @@
 import os
 from unittest import mock, main, TestCase
 
-from pipeline import create_build_step, create_oci_manifest_step, create_scan_step, process_env_to_config, PLUGIN_ENV_PREFIX, CURRENT_BRANCH, BUILDKIT_VERSION
+from pipeline import create_build_step, create_oci_manifest_step, process_env_to_config, PLUGIN_ENV_PREFIX, CURRENT_BRANCH, BUILDKIT_VERSION
 
 
 class TestPipelineGeneration(TestCase):
@@ -36,6 +36,8 @@ class TestPipelineGeneration(TestCase):
         'BUILDKITE_BRANCH': 'main',
         'BUILDKITE_PIPELINE_NAME': 'testcase',
         'BUILDKITE_BUILD_NUMBER': '110',
+        'WIZ_CLIENT_ID': 'wiz-client-id',
+        'WIZ_CLIENT_SECRET': 'wiz-client-secret',
     }
 
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
@@ -44,6 +46,7 @@ class TestPipelineGeneration(TestCase):
 
         this.assertEqual(config, this.config)
 
+    @mock.patch.dict(os.environ, RUNTIME_ENVS)
     def test_create_build_step(this):
         platform = 'arm'
         agent = 'docker-arm'
@@ -55,7 +58,15 @@ class TestPipelineGeneration(TestCase):
         this.maxDiff = None
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load --push --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            'chmod +x ./wizcli',
+            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
+            './wizcli docker scan --image '
+            '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 | terminal-to-html > out.html; SCAN_STATUS=0',
+            'if [[ $$SCAN_STATUS -eq 0 ]]; then cat out.html | buildkite-agent annotate --style info --context arm-image-security-scan; else cat out.html | buildkite-agent annotate --style error --context arm-image-security-scan; fi',
+            'test $$SCAN_STATUS -eq 0 || exit 1',
+            'docker image push {platform_image}'
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')
@@ -88,19 +99,6 @@ class TestPipelineGeneration(TestCase):
 
         this.assertNotIn('agent', step)
 
-    @mock.patch.dict(os.environ, RUNTIME_ENVS)
-    def test_create_scan_step(this):
-        step = create_scan_step(this.config)
-
-        this.assertEqual(step['command'], [
-            'docker pull 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890',
-            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
-            'chmod +x ./wizcli',
-            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'./wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag pipeline_run=110',
-        ])
-
-        this.assertEqual(step['depends_on'], 'build-and-push-manifest')
 
 if __name__ == '__main__':
     main()
