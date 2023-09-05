@@ -13,7 +13,7 @@ class TestPipelineGeneration(TestCase):
         'context_path': '.',
         'build_arm': True,
         'build_x86': False,
-        'push_branches': ['main'],
+        'push_branches': [],
         'scan_image': True,
         'group_key': 'build-and-push',
         'additional_tag': None,
@@ -31,7 +31,6 @@ class TestPipelineGeneration(TestCase):
         f'{PLUGIN_ENV_PREFIX}BUILD_ARM': 'true',
         f'{PLUGIN_ENV_PREFIX}BUILD_X86': 'false',
         f'{PLUGIN_ENV_PREFIX}ARM_BUILD_REQUIRED': 'true',
-        f'{PLUGIN_ENV_PREFIX}PUSH_BRANCHES': 'main',
         'BUILDKITE_COMMIT': '123456789010',
         'BUILDKITE_BRANCH': 'main',
         'BUILDKITE_PIPELINE_NAME': 'testcase',
@@ -46,8 +45,28 @@ class TestPipelineGeneration(TestCase):
 
         this.assertEqual(config, this.config)
 
+    @mock.patch.dict(os.environ, dict({f'{PLUGIN_ENV_PREFIX}PUSH_BRANCHES': 'testing'}, **RUNTIME_ENVS))
+    def test_process_env_to_config_no_push_branch(this):
+        config = process_env_to_config()
+
+        no_config = this.config.copy()
+        no_config['push_branches'] = ['testing']
+        no_config['push_to_ecr'] = False
+
+        this.assertEqual(config, no_config)
+
+    @mock.patch.dict(os.environ, dict({f'{PLUGIN_ENV_PREFIX}PUSH_BRANCHES': 'testing,main'}, **RUNTIME_ENVS))
+    def test_process_env_to_config_no_push_branch(this):
+        config = process_env_to_config()
+
+        yes_config = this.config.copy()
+        yes_config['push_branches'] = ['testing', 'main']
+
+        this.assertEqual(config, yes_config)
+
+
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
-    def test_create_build_step(this):
+    def test_create_build_step_push(this):
         platform = 'arm'
         agent = 'docker-arm'
 
@@ -59,15 +78,40 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
             f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
-            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli',
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-arm64',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            './wizcli docker scan --image '
-            '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 | terminal-to-html > out.html; SCAN_STATUS=0',
-            'if [[ $$SCAN_STATUS -eq 0 ]]; then cat out.html | buildkite-agent annotate --style info --context arm-image-security-scan; else cat out.html | buildkite-agent annotate --style error --context arm-image-security-scan; fi',
+            './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
+            'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context arm-image-security-scan; else echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context arm-image-security-scan; fi',
             'test $$SCAN_STATUS -eq 0 || exit 1',
             'docker image push {platform_image}'
         ])
+        this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
+        this.assertEqual(step['key'], 'build-and-push-build-push-arm')
+
+    @mock.patch.dict(os.environ, RUNTIME_ENVS)
+    def test_create_build_step_no_push(this):
+        platform = 'arm'
+        agent = 'docker-arm'
+        config = this.config.copy()
+        config['push_to_ecr'] = False
+        step = create_build_step(platform, agent, config)
+
+        this.assertEqual(step['label'], ':docker: Build arm image')
+        this.assertEqual(step['agents'], {'queue': 'docker-arm'})
+        this.maxDiff = None
+        this.assertEqual(step['command'], [
+            f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
+            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:{CURRENT_BRANCH} --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN   --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-arm64',
+            'chmod +x ./wizcli',
+            './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
+            './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
+            'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context arm-image-security-scan; else echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context arm-image-security-scan; fi',
+            'test $$SCAN_STATUS -eq 0 || exit 1',
+            'echo "Not pushing to ECR as branch not listed in push-branches"',
+        ])
+
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')
 
