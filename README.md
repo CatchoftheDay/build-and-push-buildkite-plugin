@@ -8,7 +8,8 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.1: ~
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.2: ~
+        push-branches: testing,main,master
 ```
 
 ## Configuration
@@ -17,13 +18,14 @@ All configuration is optional.
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.1:
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.2:
         dockerfile-path: app/Dockerfile
         context-path: "."
         image-name: my-super-special-application
         image-tag: latest
         additional-tag: $BUILDKITE_BUILD_NUMBER
         build-args: "secret-from-vault,not-a-secret=42"
+        push-branches: testing,main,master
         build-arm: true
         build-x86: true
         scan-image: true
@@ -93,10 +95,10 @@ Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `
           save: file
           restore: pipeline
   - label: ":docker: Build and upload container to ECR"
-    branches: testing master
     plugins:
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.1:
           composer-cache: true
+          push-branches: testing,main,master
 ```
 
 ### `npm-cache` [boolean]
@@ -124,10 +126,10 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
           save: file
           restore: pipeline
   - label: ":docker: Build and upload container to ECR"
-    branches: testing master
     plugins:
       - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.1:
           npm-cache: true
+          push-branches: testing,main,master
 ```
 
 ## Utilising package caches
