@@ -8,7 +8,7 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.2: ~
+    - ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git#v1.3.2:
         push-branches: testing,main,master
 ```
 
