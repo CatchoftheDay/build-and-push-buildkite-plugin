@@ -126,6 +126,7 @@ def sanitise_step_key(key: str) -> str:
     return ''.join([c for c in key if c.isalnum() or c in ['_', '-', ':']])
 
 
+# pylint: disable=too-many-locals
 def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
     platform_image: str = f'{config["fully_qualified_image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
@@ -171,6 +172,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
             f'./wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; {block_sec_scan_stub}',
+            # pylint: disable=anomalous-backslash-in-string
             f'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out)\`\`\`\n\n</details>" | buildkite-agent annotate --style info --context {platform}-image-security-scan; else echo -e "**Container scan report ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {platform}-image-security-scan; fi',
             'test $$SCAN_STATUS -eq 0 || exit 1',
         ]
