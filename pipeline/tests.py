@@ -84,7 +84,7 @@ class TestPipelineGeneration(TestCase):
             './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
             'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context arm-image-security-scan; else echo -e "**Container scan report (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context arm-image-security-scan; fi',
             'test $$SCAN_STATUS -eq 0 || exit 1',
-            'docker image push {platform_image}'
+            'docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm'
         ])
         this.assertEqual(step['env'], {'DOCKER_BUILDKIT': '1'})
         this.assertEqual(step['key'], 'build-and-push-build-push-arm')

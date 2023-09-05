@@ -149,7 +149,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
     push_stub: str = 'echo "Not pushing to ECR as branch not listed in push-branches"'
     if config['push_to_ecr']:
-        push_stub = 'docker image push {platform_image}'
+        push_stub = f'docker image push {platform_image}'
 
     composer_cache_stub: str = ''
     if config['composer_cache']:
