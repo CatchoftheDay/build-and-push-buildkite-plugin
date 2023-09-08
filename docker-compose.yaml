@@ -6,7 +6,7 @@ services:
       - ".:/plugin"
     command: 
       - --id 
-      - "ssh://git@github.com/CatchoftheDay/build-and-push-buildkite-plugin.git"
+      - "CatchoftheDay/build-and-push"
 
   lint-shell:
     image: koalaman/shellcheck
