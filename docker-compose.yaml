@@ -17,14 +17,14 @@ services:
       - /plugin/hooks/command
 
   lint-python:
-    image: python:3.7
+    image: python:3.11
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
     command: sh -c "python3 -m pip install -r requirements.dev.txt && python3 -m pylint pipeline/pipeline.py --ignore-long-lines \".*\""
 
   tests-python:
-    image: python:3.7
+    image: python:3.11
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
