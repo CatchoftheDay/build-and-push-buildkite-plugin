@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 
 import yaml
 
+# renovate: datasource=github-releases depName=moby/buildkit
 BUILDKIT_VERSION: str = os.environ.get('BUILD_AND_PUSH_BUILDKIT_VERSION', 'v0.11.6')
 
 ECR_ACCOUNT: str = "362995399210"

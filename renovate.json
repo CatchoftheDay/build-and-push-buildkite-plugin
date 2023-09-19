@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "extends": [
+    "github>CatchoftheDay/renovate-config"
+  ],
+  "regexManagers": [
+    {
+      "description": "Update Buildkit version in pipeline.py",
+      "fileMatch": [".*pipeline.py$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+?) depName=(?<depName>.+?)(?: (?:packageName|lookupName)=(?<packageName>.+?))?(?: versioning=(?<versioning>[a-z-]+?))?\\s(?:ENV|ARG) .+?('BUILD_AND_PUSH_BUILDKIT_VERSION', '(?<currentValue>.+?)')\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
+    }
+  ]
+}
