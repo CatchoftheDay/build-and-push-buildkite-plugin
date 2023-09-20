@@ -1,7 +1,7 @@
 version: "3"
 services:
   lint-plugin:
-    image: buildkite/plugin-linter:v2.0.4
+    image: 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/buildkite/plugin-linter:v2.0.4
     volumes:
       - ".:/plugin"
     command: 
@@ -9,7 +9,7 @@ services:
       - "CatchoftheDay/build-and-push"
 
   lint-shell:
-    image: koalaman/shellcheck:v0.9.0
+    image: 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/koalaman/shellcheck:v0.9.0
     volumes:
       - ".:/plugin"
     command:
@@ -17,14 +17,14 @@ services:
       - /plugin/hooks/command
 
   lint-python:
-    image: python:3.7
+    image: public.ecr.aws/docker/library/python:3.7
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
     command: sh -c "python3 -m pip install -r requirements.dev.txt && python3 -m pylint pipeline/pipeline.py --ignore-long-lines \".*\""
 
   tests-python:
-    image: python:3.7
+    image: public.ecr.aws/docker/library/python:3.7
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
