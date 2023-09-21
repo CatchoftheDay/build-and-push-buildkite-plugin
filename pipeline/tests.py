@@ -20,6 +20,7 @@ class TestPipelineGeneration(TestCase):
         'always_pull': True,
         'composer_cache': False,
         'npm_cache': False,
+        'yarn_cache': False,
         'fully_qualified_image_name': '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase',
         'push_to_ecr': True,
     }

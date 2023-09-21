@@ -79,6 +79,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'bool',
             'default': False,
         },
+        'yarn_cache': {
+            'type': 'bool',
+            'default': False,
+        },
         'push_branches': {
             'type': 'list',
             'default': [],
@@ -160,6 +164,10 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
     if config['npm_cache']:
         npm_cache_stub = '--build-context npm-cache=.npm-cache'
 
+    yarn_cache_stub: str = ''
+    if config['yarn_cache']:
+        yarn_cache_stub = '--build-context yarn-cache=.yarn-cache'
+
     wiz_binary_name: str = f'wizcli-linux-{"amd64" if platform == "x86" else "arm64"}'
 
     scan_steps: List[str] = []
@@ -184,7 +192,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         'key': f'{config["group_key"]}-build-push-{platform}',
         'command': [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
+            f'docker buildx build --load {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} {yarn_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
             *scan_steps,
             f'{push_stub}',
         ],
@@ -227,6 +235,20 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
                     'backend': 's3',
                     'manifest': 'package-lock.json',
                     'path': '.npm-cache',
+                    'restore': 'file',
+                    'save': 'pipeline'
+                },
+            }
+        )
+
+    if config['yarn_cache']:
+        step['command'].insert(0, 'mkdir -p .yarn-cache')
+        step['command'].insert(0, 'echo ".yarn-cache" >> .dockerignore')
+        step['plugins'].append({
+                'cache#v0.6.0': {
+                    'backend': 's3',
+                    'manifest': 'yarn.lock',
+                    'path': '.yarn-cache',
                     'restore': 'file',
                     'save': 'pipeline'
                 },
