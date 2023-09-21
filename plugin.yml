@@ -31,6 +31,8 @@ configuration:
       type: boolean
     npm-cache:
       type: boolean
+    yarn-cache:
+      type: boolean
     push-branches:
       type: string
   required: []

@@ -132,9 +132,40 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
           push-branches: testing,main,master
 ```
 
+### `yarn-cache` [boolean]
+Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_modules`) when building the image. The cache **_must_** be available at `.yarn-cache`. The cache will be made available as a build-context called `yarn-cache` (see [utilising-package-caches](#utilising-package-caches) for how to take advantag of this in your builds). If the image builds successfully the cache will be resaved at `pipeline` level so it can be reused as a base even if the manifest changes. See the [buildkite cache plugin](https://github.com/buildkite-plugins/cache-buildkite-plugin) for further details of how this works. Default: `false`
+
+#### example
+```yaml
+  - label: cache-node-deps
+    command: |
+      echo "//npm.pkg.github.com/:_authToken=$${GITHUB_TOKEN}" > ~/.npmrc;
+      yarn config set cache-folder ./.yarn-cache;
+      yarn install --frozen-lockfile;
+    plugins:
+      - docker#v5.6.0:
+          image: "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/node-base:18-buster-slim"
+          always-pull: true
+          mount-ssh-agent: true
+          propagate-environment: true
+          environment:
+            - GITHUB_TOKEN
+      - cache#v0.6.0:
+          backend: s3
+          manifest: package-lock.json
+          path: .yarn-cache
+          save: file
+          restore: pipeline
+  - label: ":docker: Build and upload container to ECR"
+    plugins:
+      - CatchoftheDay/build-and-push#v1.3.3:
+          yarn-cache: true
+          push-branches: testing,main,master
+```
+
 ## Utilising package caches
 
-Only including the `composer-cache: true` or `npm-cache: true` flags isn't sufficient to take advantage of your package cache. The projects Dockerfile will also need to contain something like the following when performing the install step with the package manager.
+Only including the `composer-cache: true` or `npm-cache: true` or `yarn-cache: true` flags isn't sufficient to take advantage of your package cache. The projects Dockerfile will also need to contain something like the following when performing the install step with the package manager.
 
 #### composer
 
@@ -157,6 +188,15 @@ RUN --mount=type=cache,from=composer-cache,target=/root/.cache/composer \
 RUN --mount=type=cache,from=npm-cache,target=/root/.npm \
     set -ex && \
     npm ci
+```
+
+#### yarn
+
+```Dockerfile
+RUN --mount=type=cache,from=yarn-cache,target=/root/.npm \
+    set -ex && \
+    yarn config set cache-folder /root/.npm && \
+    yarn install --frozen-lockfile
 ```
 
 This will ensure that package files are picked up from the cache rather than being redownloaded from the internet.
