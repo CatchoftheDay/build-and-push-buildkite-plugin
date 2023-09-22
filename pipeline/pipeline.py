@@ -11,7 +11,8 @@ BUILDKIT_VERSION: str = os.environ.get('BUILD_AND_PUSH_BUILDKIT_VERSION', 'v0.11
 ECR_ACCOUNT: str = "362995399210"
 ECR_REPO_PREFIX: str = "catch"
 ECR_REGION: str = "ap-southeast-2"
-CURRENT_BRANCH: str = os.environ.get('BUILDKITE_BRANCH') if os.environ.get('BUILDKITE_BRANCH', '') != '' else 'no-branch'
+CURRENT_BRANCH: str = os.environ.get('BUILDKITE_BRANCH', '')
+CURRENT_TAG: str = os.environ.get('BUILDKITE_TAG', '')
 
 PLUGIN_NAME: str = "build-and-push"
 PLUGIN_ENV_PREFIX: str = f"BUILDKITE_PLUGIN_{PLUGIN_NAME.upper().replace('-', '_')}_"
@@ -121,7 +122,7 @@ def process_env_to_config() -> Dict[str, Any]:
 
     config['fully_qualified_image_name'] = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}'
 
-    config['push_to_ecr'] = not config['push_branches'] or CURRENT_BRANCH in config['push_branches'] or CURRENT_BRANCH == 'no-branch'
+    config['push_to_ecr'] = not config['push_branches'] or CURRENT_BRANCH in config['push_branches'] or CURRENT_BRANCH == CURRENT_TAG
 
     return config
 
@@ -285,10 +286,10 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     if config['additional_tag']:
         step['command'].append(
             f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{config["additional_tag"]} {" ".join(images)}')
-        if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']):
+        if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']) and CURRENT_BRANCH != '':
             step['command'].append(
                 f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
-    elif config['image_tag'] != CURRENT_BRANCH:
+    elif config['image_tag'] != CURRENT_BRANCH and CURRENT_BRANCH != '':
         step['command'].append(
             f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
 
