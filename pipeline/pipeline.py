@@ -289,6 +289,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         if CURRENT_BRANCH not in (config['additional_tag'], config['image_tag']) and CURRENT_BRANCH != '':
             step['command'].append(
                 f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
+    # pylint: disable=R1714
     elif config['image_tag'] != CURRENT_BRANCH and CURRENT_BRANCH != '':
         step['command'].append(
             f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{CURRENT_BRANCH} {" ".join(images)}')
