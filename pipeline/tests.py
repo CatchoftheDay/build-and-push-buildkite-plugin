@@ -29,6 +29,8 @@ class TestPipelineGeneration(TestCase):
         'repository_namespace': 'catch',
     }
 
+    maxDiff = None
+
     RUNTIME_ENVS = {
         f'{PLUGIN_ENV_PREFIX}DOCKERFILE_PATH': 'Dockerfile',
         f'{PLUGIN_ENV_PREFIX}CONTEXT_PATH': '.',
