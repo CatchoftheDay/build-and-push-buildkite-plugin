@@ -26,6 +26,7 @@ class TestPipelineGeneration(TestCase):
         'yarn_cache': False,
         'fully_qualified_image_name': '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase',
         'push_to_ecr': True,
+        'repository_namespace': 'catch',
     }
 
     RUNTIME_ENVS = {
@@ -73,6 +74,18 @@ class TestPipelineGeneration(TestCase):
         yes_config['push_branches'] = ['testing', 'main']
 
         this.assertEqual(config, yes_config)
+
+    @mock.patch.dict(os.environ, dict({f'{PLUGIN_ENV_PREFIX}REPOSITORY_NAMESPACE': 'docker.io'}, **RUNTIME_ENVS))
+    @mock.patch('pipeline.CURRENT_BRANCH', 'main')
+    @mock.patch('pipeline.CURRENT_TAG', '')
+    def test_process_env_to_config_different_namespace(this):
+        config = process_env_to_config()
+
+        ns_config = this.config.copy()
+        ns_config['fully_qualified_image_name'] = '362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/testcase'
+        ns_config['repository_namespace'] = 'docker.io'
+
+        this.assertEqual(config, ns_config)
 
 
     @mock.patch.dict(os.environ, RUNTIME_ENVS)

@@ -10,7 +10,6 @@ import yaml
 BUILDKIT_VERSION: str = os.environ.get('BUILD_AND_PUSH_BUILDKIT_VERSION', 'v0.12.3')
 
 ECR_ACCOUNT: str = "362995399210"
-ECR_REPO_PREFIX: str = "catch"
 ECR_REGION: str = "ap-southeast-2"
 CURRENT_BRANCH: str = os.environ.get('BUILDKITE_BRANCH', '')
 CURRENT_TAG: str = os.environ.get('BUILDKITE_TAG', '')
@@ -91,6 +90,10 @@ def process_env_to_config() -> Dict[str, Any]:
             'type': 'list',
             'default': [],
         },
+        'repository_namespace': {
+            'type': 'string',
+            'default': 'catch',
+        },
     }
 
     config = {}
@@ -126,7 +129,9 @@ def process_env_to_config() -> Dict[str, Any]:
 
     config['group_key'] = sanitise_step_key(config['group_key'])
 
-    config['fully_qualified_image_name'] = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ECR_REPO_PREFIX}/{config["image_name"]}'
+    ecr_repository_namespace_joiner = f'{config["repository_namespace"]}/' if config['repository_namespace'] else ''
+
+    config['fully_qualified_image_name'] = f'{ECR_ACCOUNT}.dkr.ecr.{ECR_REGION}.amazonaws.com/{ecr_repository_namespace_joiner}{config["image_name"]}'
 
     config['push_to_ecr'] = not config['push_branches'] or CURRENT_BRANCH in config['push_branches'] or CURRENT_BRANCH == CURRENT_TAG
 
