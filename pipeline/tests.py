@@ -1,14 +1,17 @@
 import os
+import time
 from unittest import mock, main, TestCase
 
 from pipeline import create_build_step, create_oci_manifest_step, process_env_to_config, PLUGIN_ENV_PREFIX, BUILDKIT_VERSION
 
+BUILD_TIME = int(time.time())
 
 class TestPipelineGeneration(TestCase):
     config = {
         'image_name': 'testcase',
         'image_tag': '1234567890',
-        'build_args': ['arg1=42', 'arg2', 'GITHUB_TOKEN'],
+        # Setting BUILD_DATE like this is likely to cause issues at some point if the config generation tests takes longer than 1 second
+        'build_args': ['arg1=42', 'arg2', 'GITHUB_TOKEN', 'BUILDKITE_COMMIT', 'BUILDKITE_JOB_ID', f'BUILD_DATE={BUILD_TIME}'],
         'dockerfile_path': 'Dockerfile',
         'context_path': '.',
         'build_arm': True,
@@ -86,7 +89,7 @@ class TestPipelineGeneration(TestCase):
         this.maxDiff = None
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --build-arg BUILDKITE_COMMIT --build-arg BUILDKITE_JOB_ID --build-arg BUILD_DATE={BUILD_TIME}    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-arm64',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
@@ -113,7 +116,7 @@ class TestPipelineGeneration(TestCase):
         this.maxDiff = None
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:v1.0.0 --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:v1.0.0 --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --build-arg BUILDKITE_COMMIT --build-arg BUILDKITE_JOB_ID --build-arg BUILD_DATE={BUILD_TIME}    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-arm64',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
@@ -142,7 +145,7 @@ class TestPipelineGeneration(TestCase):
         this.maxDiff = None
         this.assertEqual(step['command'], [
             f'docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}',
-            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
+            f'docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:master --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --build-arg BUILDKITE_COMMIT --build-arg BUILDKITE_JOB_ID --build-arg BUILD_DATE={BUILD_TIME}    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .',
             'curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-arm64',
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
