@@ -1,5 +1,6 @@
 """A Buildkite plugin to build and push container images to ECR"""
 import os
+import time
 
 from typing import List, Dict, Any
 
@@ -24,6 +25,8 @@ BUILD_PLATFORMS: Dict[str, str] = {
 }
 
 BLOCK_ON_CONTAINER_SCAN = os.environ.get('BLOCK_BUILD_AND_PUSH_ON_SCAN', 'false').lower() == 'true'
+
+UNIX_BUILD_TIME = int(time.time())
 
 def process_env_to_config() -> Dict[str, Any]:
     """Process buildkite plugin environment variables into a config dict"""
@@ -116,7 +119,10 @@ def process_env_to_config() -> Dict[str, Any]:
         if name not in config:
             config[name] = value.get('default', None)
 
-    config['build_args'].append("GITHUB_TOKEN")
+    config['build_args'].append('GITHUB_TOKEN')
+    config['build_args'].append('BUILDKITE_COMMIT')
+    config['build_args'].append('BUILDKITE_JOB_ID')
+    config['build_args'].append(f'BUILD_DATE={UNIX_BUILD_TIME}')
 
     config['group_key'] = sanitise_step_key(config['group_key'])
 
