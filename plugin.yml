@@ -35,5 +35,7 @@ configuration:
       type: boolean
     push-branches:
       type: string
+    repository-namespace:
+      type: string
   required: []
   additionalProperties: false

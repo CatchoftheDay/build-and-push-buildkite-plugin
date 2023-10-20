@@ -23,6 +23,7 @@ steps:
         context-path: "."
         image-name: my-super-special-application
         image-tag: latest
+        repository-namespace: wes-digital
         additional-tag: $BUILDKITE_BUILD_NUMBER
         build-args: "secret-from-vault,not-a-secret=42"
         push-branches: testing,main,master
@@ -39,6 +40,9 @@ The relative path of the Dockerfile from the project root. Default: `Dockerfile`
 
 ### `context-path` [string]
 The path used as the root of the docker build environment. This effects the source location and availablility of files referenced with `ADD` in the Dockerfile. Default: `.` (the project root)
+
+### `repository-namespace` [string]
+The namespace of the ECR repository to push to. Default: `catch`
 
 ### `image-name` [string]
 The name of your application image. Will be prefixed with `catch/` before being pushed to the registry. Default: Buildkite pipeline name (`$BUILDKITE_PIPELINE_NAME`).
