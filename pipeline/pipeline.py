@@ -216,11 +216,7 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
         },
         'plugins': [
             {
-                'ecr#v2.7.0': {
-                    'login': 'true',
-                    'account_ids': ECR_ACCOUNT,
-                    'region': ECR_REGION,
-                },
+                'CatchoftheDay/set-environment#v1.1.0': {},
             },
         ],
     }
@@ -283,15 +279,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         'key': f'{config["group_key"]}-manifest',
         'command': [
             f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{config["image_tag"]} {" ".join(images)}',        ],
-        'plugins': [
-            {
-                'ecr#v2.7.0': {
-                    'login': 'true',
-                    'account_ids': ECR_ACCOUNT,
-                    'region': ECR_REGION,
-                },
-            }
-        ],
+        'plugins': [],
     }
 
     if config['additional_tag']:
