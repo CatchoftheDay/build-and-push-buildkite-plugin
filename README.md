@@ -8,7 +8,7 @@ Subsequent pipeline steps can `depend_on` the step key: `build-and-push` to ensu
 ```yaml
 steps:
   - plugins:
-    - CatchoftheDay/build-and-push#v1.4.0:
+    - CatchoftheDay/build-and-push#v1.4.1:
         push-branches: testing,main,master
 ```
 
@@ -18,7 +18,7 @@ All configuration is optional.
 ```yaml
 steps:
   - plugins:
-    - CatchoftheDay/build-and-push#v1.4.0:
+    - CatchoftheDay/build-and-push#v1.4.1:
         dockerfile-path: app/Dockerfile
         context-path: "."
         image-name: my-super-special-application
@@ -100,7 +100,7 @@ Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `
           restore: pipeline
   - label: ":docker: Build and upload container to ECR"
     plugins:
-      - CatchoftheDay/build-and-push#v1.4.0:
+      - CatchoftheDay/build-and-push#v1.4.1:
           composer-cache: true
           push-branches: testing,main,master
 ```
@@ -131,7 +131,7 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
           restore: pipeline
   - label: ":docker: Build and upload container to ECR"
     plugins:
-      - CatchoftheDay/build-and-push#v1.4.0:
+      - CatchoftheDay/build-and-push#v1.4.1:
           npm-cache: true
           push-branches: testing,main,master
 ```
@@ -162,7 +162,7 @@ Attempt to utilize a buildkite-cached npm package cache (_not_ a cache of `node_
           restore: pipeline
   - label: ":docker: Build and upload container to ECR"
     plugins:
-      - CatchoftheDay/build-and-push#v1.4.0:
+      - CatchoftheDay/build-and-push#v1.4.1:
           yarn-cache: true
           push-branches: testing,main,master
 ```
