@@ -109,8 +109,7 @@ class TestPipelineGeneration(TestCase):
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
             './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
-            'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context testcase-1234567890-arm-security-scan; else echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-            'test $$SCAN_STATUS -eq 0 || exit 1',
+            'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; exit 1; fi',
             'docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm'
         ])
 
@@ -136,8 +135,7 @@ class TestPipelineGeneration(TestCase):
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
             './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
-            'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context testcase-1234567890-arm-security-scan; else echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-            'test $$SCAN_STATUS -eq 0 || exit 1',
+            'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; exit 1; fi',
             'docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm'
         ])
 
@@ -165,8 +163,7 @@ class TestPipelineGeneration(TestCase):
             'chmod +x ./wizcli',
             './wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
             './wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=0',
-            'if [[ $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style info --context testcase-1234567890-arm-security-scan; else echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-            'test $$SCAN_STATUS -eq 0 || exit 1',
+            'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; exit 1; fi',
             'echo "Not pushing to ECR as branch not listed in push-branches"',
         ])
 
