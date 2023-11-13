@@ -182,16 +182,15 @@ def create_build_step(platform: str, agent: str, config: Dict[str, Any]) -> Dict
 
     scan_steps: List[str] = []
     if config['scan_image']:
-        block_sec_scan_stub: str = 'SCAN_STATUS=0'
-        if BLOCK_ON_CONTAINER_SCAN:
-            block_sec_scan_stub = 'SCAN_STATUS=$$PIPESTATUS[0]'
-
         scan_steps = [
             'wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET',
-            f'wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; {block_sec_scan_stub}',
+            f'wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; SCAN_STATUS=$$PIPESTATUS[0]',
             # pylint: disable=anomalous-backslash-in-string
-            f'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [{config["image_name"]}:{config["image_tag"]}] ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {"".join(item for item in config["image_name"] if item.isalnum())}-{"".join(item for item in config["image_tag"] if item.isalnum())}-{platform}-security-scan; exit 1; fi',
+            f'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [{config["image_name"]}:{config["image_tag"]}] ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {"".join(item for item in config["image_name"] if item.isalnum())}-{"".join(item for item in config["image_tag"] if item.isalnum())}-{platform}-security-scan; fi',
         ]
+        if BLOCK_ON_CONTAINER_SCAN:
+            scan_steps.append('if [[ ! $$SCAN_STATUS -eq 0 ]]; then exit $$SCAN_STATUS; fi')
+
 
     step_label = f':docker: Build and push {platform} image' if config['push_to_ecr'] else f':docker: Build {platform} image'
     step = {
