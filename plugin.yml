@@ -37,5 +37,7 @@ configuration:
       type: string
     repository-namespace:
       type: string
+    mutate-image-tag:
+      type: boolean
   required: []
   additionalProperties: false

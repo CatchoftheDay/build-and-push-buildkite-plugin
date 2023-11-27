@@ -23,6 +23,7 @@ steps:
         context-path: "."
         image-name: my-super-special-application
         image-tag: latest
+        mutate-image-tag: true
         repository-namespace: wes-digital
         additional-tag: $BUILDKITE_BUILD_NUMBER
         build-args: "secret-from-vault,not-a-secret=42"
@@ -52,6 +53,9 @@ A container image tag. Default: First 10 characters of git SHA.
 
 ### `additional-tag` [string]
 An additional tag for the image, useful if the main tag is dynamic or vis-versa. Default: None
+
+### `mutate-image-tag` [boolean]
+Enable an existing tag to be over-written when pushing this image to ECR. **WARNING**: This will overwrite a tag even if the repository has immutable tags enabled. Default: `false`
 
 ### `build-args` [comma-delimited list]
 Additional build-arguments (`--build-arg`) to pass to `docker build`. These can be single values (ideally used for secrets that are available to every pipeline step as env vars) or key=value pairs which can be used to pass in non-secret values that aren't known to every step of the pipeline. Default: `""`; `GITHUB_TOKEN`, `BUILDKITE_COMMIT`, `BUILDKITE_JOB_ID` and `BUILD_DATE` (unit timestamp) are always provided.
