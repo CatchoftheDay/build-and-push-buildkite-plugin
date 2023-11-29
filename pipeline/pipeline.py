@@ -190,9 +190,17 @@ def create_build_step(
     if config["always_pull"]:
         pull_stub = "--pull"
 
-    push_stub: str = 'echo "Not pushing to ECR as branch not listed in push-branches"'
+    push_steps: List[str] = [
+        'echo "Not pushing to ECR as branch not listed in push-branches"'
+    ]
     if config["push_to_ecr"]:
-        push_stub = f"docker image push {platform_image}"
+        push_steps = [f"docker image push {platform_image}"]
+
+        if config["mutate_image_tag"]:
+            push_steps.insert(
+                0,
+                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["image_name"]} --image-ids imageTag=multi-platform-{config["image_tag"]}-{platform} || true',
+            )
 
     composer_cache_stub: str = ""
     if config["composer_cache"]:
@@ -231,7 +239,7 @@ def create_build_step(
             f"docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}",
             f'docker buildx build --load {pull_stub} --ssh default {cache_from_images_stub} {build_args} {composer_cache_stub} {npm_cache_stub} {yarn_cache_stub} --tag {platform_image} -f {config["dockerfile_path"]} {config["context_path"]}',
             *scan_steps,
-            f"{push_stub}",
+            *push_steps,
         ],
         "agents": {
             "queue": agent,
