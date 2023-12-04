@@ -275,6 +275,7 @@ class TestPipelineGeneration(TestCase):
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
             ],
         )
 
@@ -296,6 +297,7 @@ class TestPipelineGeneration(TestCase):
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
             ],
         )
 
@@ -318,6 +320,8 @@ class TestPipelineGeneration(TestCase):
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-x86 || true",
             ],
         )
 
@@ -350,6 +354,8 @@ class TestPipelineGeneration(TestCase):
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_v1.0.0 || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_v1.0.0 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-x86 || true",
             ],
         )
 
