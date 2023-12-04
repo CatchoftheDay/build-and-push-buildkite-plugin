@@ -199,7 +199,7 @@ def create_build_step(
         if config["mutate_image_tag"]:
             push_steps.insert(
                 0,
-                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["image_name"]} --image-ids imageTag=multi-platform-{config["image_tag"]}-{platform} || true',
+                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=multi-platform-{config["image_tag"]}-{platform} || true',
             )
 
     composer_cache_stub: str = ""
@@ -321,7 +321,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     if config["mutate_image_tag"]:
         basic_actions.insert(
             0,
-            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["image_name"]} --image-ids imageTag={config["image_tag"]} || true',
+            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag={config["image_tag"]} || true',
         )
 
     step = {
@@ -335,7 +335,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     if config["additional_tag"]:
         if config["mutate_image_tag"]:
             step["command"].append(
-                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["image_name"]} --image-ids imageTag={config["additional_tag"]} || true'
+                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag={config["additional_tag"]} || true'
             )
         step["command"].append(
             f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:{config["additional_tag"]} {" ".join(images)}'
@@ -344,7 +344,7 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     if CURRENT_BRANCH != "":
         # Always remove the cache_branch tagged image so we can update it in immutable repositories as cache for the next build
         step["command"].append(
-            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["image_name"]} --image-ids imageTag=cache_{CURRENT_BRANCH} || true'
+            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=cache_{CURRENT_BRANCH} || true'
         )
     step["command"].append(
         f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
