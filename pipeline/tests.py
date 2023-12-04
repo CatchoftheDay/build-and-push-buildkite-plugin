@@ -166,7 +166,7 @@ class TestPipelineGeneration(TestCase):
                 "wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET",
                 'wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=$${PIPESTATUS[0]}',
                 'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
                 "docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
             ],
         )
@@ -273,7 +273,7 @@ class TestPipelineGeneration(TestCase):
             step["command"],
             [
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=cache_main || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
             ],
         )
@@ -292,9 +292,9 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(
             step["command"],
             [
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=1234567890 || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=1234567890 || true",
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=cache_main || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
             ],
         )
@@ -316,7 +316,7 @@ class TestPipelineGeneration(TestCase):
             step["command"],
             [
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=cache_main || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
             ],
         )
@@ -348,7 +348,7 @@ class TestPipelineGeneration(TestCase):
             step["command"],
             [
                 "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name testcase --image-ids imageTag=cache_v1.0.0 || true",
+                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_v1.0.0 || true",
                 f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_v1.0.0 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
             ],
         )
