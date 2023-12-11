@@ -196,12 +196,6 @@ def create_build_step(
     if config["push_to_ecr"]:
         push_steps = [f"docker image push {platform_image}"]
 
-        if config["mutate_image_tag"]:
-            push_steps.insert(
-                0,
-                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=multi-platform-{config["image_tag"]}-{platform} || true',
-            )
-
     composer_cache_stub: str = ""
     if config["composer_cache"]:
         composer_cache_stub = "--build-context composer-cache=.composer-cache"
@@ -346,9 +340,9 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         step["command"].append(
             f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=cache_{CURRENT_BRANCH} || true'
         )
-    step["command"].append(
-        f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
-    )
+        step["command"].append(
+            f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
+        )
 
     return step
 
