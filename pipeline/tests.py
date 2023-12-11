@@ -135,44 +135,15 @@ class TestPipelineGeneration(TestCase):
                 "wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET",
                 'wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=$${PIPESTATUS[0]}',
                 'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-                "docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                'PLATFORM_IMAGE="$(docker inspect --format=\'{{index .RepoDigests 0}}\' 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm)"',
+                'buildkite-agent meta-data set build-and-push-build-and-push-arm-image "$$PLATFORM_IMAGE"',
+                'docker image push "$$PLATFORM_IMAGE"',
             ],
         )
 
         this.assertEqual(step["env"], {"DOCKER_BUILDKIT": "1"})
         this.assertEqual(step["key"], "build-and-push-build-push-arm")
 
-    @mock.patch.dict(os.environ, RUNTIME_ENVS)
-    @mock.patch("pipeline.CURRENT_BRANCH", "main")
-    @mock.patch("pipeline.CURRENT_TAG", "")
-    def test_create_build_step_push_mutate_tags(this):
-        platform = "arm"
-        agent = "docker-arm"
-
-        config = this.config.copy()
-        config["mutate_image_tag"] = True
-        step = create_oci_manifest_step(config)
-
-        step = create_build_step(platform, agent, config)
-
-        this.assertEqual(step["label"], ":docker: Build and push arm image")
-        this.assertEqual(step["agents"], {"queue": "docker-arm"})
-        this.maxDiff = None
-        this.assertEqual(
-            step["command"],
-            [
-                f"docker buildx use builder || docker buildx create --bootstrap --name builder --use --driver docker-container --driver-opt image=moby/buildkit:{BUILDKIT_VERSION}",
-                f"docker buildx build --load --pull --ssh default  --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_1234567890 --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main --cache-from type=registry,ref=362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_master --build-arg arg1=42 --build-arg arg2 --build-arg GITHUB_TOKEN --build-arg BUILDKITE_COMMIT --build-arg BUILDKITE_JOB_ID --build-arg BUILD_DATE={BUILD_TIME}    --tag 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -f Dockerfile .",
-                "wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET",
-                'wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=$${PIPESTATUS[0]}',
-                'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-                "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=multi-platform-1234567890-arm || true",
-                "docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
-            ],
-        )
-
-        this.assertEqual(step["env"], {"DOCKER_BUILDKIT": "1"})
-        this.assertEqual(step["key"], "build-and-push-build-push-arm")
 
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
@@ -196,7 +167,9 @@ class TestPipelineGeneration(TestCase):
                 'wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=$${PIPESTATUS[0]}',
                 'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
                 "if [[ ! $$SCAN_STATUS -eq 0 ]]; then exit $$SCAN_STATUS; fi",
-                "docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                'PLATFORM_IMAGE="$(docker inspect --format=\'{{index .RepoDigests 0}}\' 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm)"',
+                'buildkite-agent meta-data set build-and-push-build-and-push-arm-image "$$PLATFORM_IMAGE"',
+                'docker image push "$$PLATFORM_IMAGE"',
             ],
         )
 
@@ -228,7 +201,10 @@ class TestPipelineGeneration(TestCase):
                 "wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET",
                 'wizcli docker scan --image 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm -p "Container Scanning" -p "Secret Scanning" --tag pipeline=testcase --tag architecture=arm --tag pipeline_run=110 > out 2>&1 | true; SCAN_STATUS=$${PIPESTATUS[0]}',
                 'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [testcase:1234567890] (arm)**\n\n<details><summary></summary>\n\n\\`\\`\\`term\n$(cat out**)\\`\\`\\`\n\n</details>" | buildkite-agent annotate --style error --context testcase-1234567890-arm-security-scan; fi',
-                "docker image push 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                'PLATFORM_IMAGE="$(docker inspect --format=\'{{index .RepoDigests 0}}\' 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm)"',
+                'buildkite-agent meta-data set build-and-push-build-and-push-arm-image "$$PLATFORM_IMAGE"',
+                'docker image push "$$PLATFORM_IMAGE"',
+
             ],
         )
 
@@ -272,9 +248,9 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(
             step["command"],
             [
-                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image)",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
-                f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image)",
             ],
         )
 
@@ -293,9 +269,9 @@ class TestPipelineGeneration(TestCase):
             step["command"],
             [
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=1234567890 || true",
-                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image)",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
-                f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image)",
             ],
         )
 
@@ -315,9 +291,9 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(
             step["command"],
             [
-                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image) $(buildkite-agent meta-data get build-and-push-build-and-push-x86-image)",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_main || true",
-                f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_main $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image) $(buildkite-agent meta-data get build-and-push-build-and-push-x86-image)",
             ],
         )
 
@@ -347,9 +323,9 @@ class TestPipelineGeneration(TestCase):
         this.assertEqual(
             step["command"],
             [
-                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                "docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:1234567890 $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image) $(buildkite-agent meta-data get build-and-push-build-and-push-x86-image)",
                 "aws ecr batch-delete-image --registry-id 362995399210 --repository-name catch/testcase --image-ids imageTag=cache_v1.0.0 || true",
-                f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_v1.0.0 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-arm 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:multi-platform-1234567890-x86",
+                f"docker buildx imagetools create -t 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase:cache_v1.0.0 $(buildkite-agent meta-data get build-and-push-build-and-push-arm-image) $(buildkite-agent meta-data get build-and-push-build-and-push-x86-image)",
             ],
         )
 

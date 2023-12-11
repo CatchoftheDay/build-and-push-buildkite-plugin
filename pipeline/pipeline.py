@@ -194,13 +194,11 @@ def create_build_step(
         'echo "Not pushing to ECR as branch not listed in push-branches"'
     ]
     if config["push_to_ecr"]:
-        push_steps = [f"docker image push {platform_image}"]
-
-        if config["mutate_image_tag"]:
-            push_steps.insert(
-                0,
-                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=multi-platform-{config["image_tag"]}-{platform} || true',
-            )
+        push_steps = [
+            f'PLATFORM_IMAGE_SHA="$(docker inspect --format=\'{{{{.Id}}}}\' {platform_image})"',
+            f'buildkite-agent meta-data set build-and-push-{config["group_key"]}-{platform}-image "{config["fully_qualified_image_name"]}@$$PLATFORM_IMAGE_SHA"',
+            f'docker image push "{config["fully_qualified_image_name"]}@$$PLATFORM_IMAGE_SHA"',
+        ]
 
     composer_cache_stub: str = ""
     if config["composer_cache"]:
@@ -305,7 +303,7 @@ def create_build_step(
 def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to create a container manifest and push it to ECR"""
     images: List[str] = [
-        f'{config["fully_qualified_image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
+        f'$(buildkite-agent meta-data get build-and-push-{config["group_key"]}-{platform}-image)'
         for platform, _ in BUILD_PLATFORMS.items()
         if config[f"build_{platform}"]
     ]
@@ -346,9 +344,9 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
         step["command"].append(
             f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag=cache_{CURRENT_BRANCH} || true'
         )
-    step["command"].append(
-        f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
-    )
+        step["command"].append(
+            f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
+        )
 
     return step
 
