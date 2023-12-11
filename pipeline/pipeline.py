@@ -304,14 +304,11 @@ def create_build_step(
 
 def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to create a container manifest and push it to ECR"""
-    intermediate_image_tags: List[str] = [
-        f'multi-platform-{config["image_tag"]}-{platform}'
+    images: List[str] = [
+        f'{config["fully_qualified_image_name"]}:multi-platform-{config["image_tag"]}-{platform}'
         for platform, _ in BUILD_PLATFORMS.items()
         if config[f"build_{platform}"]
     ]
-
-    images: List[str] = [f'{config["fully_qualified_image_name"]}:{tag}' for tag in intermediate_image_tags]
-
     dependencies: List[str] = [
         f'{config["group_key"]}-build-push-{platform}'
         for platform, _ in BUILD_PLATFORMS.items()
@@ -352,12 +349,6 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     step["command"].append(
         f'docker buildx imagetools create -t {config["fully_qualified_image_name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
     )
-
-    # Remove the intermediate image tags so we don't fill up the ECR repository
-    for tag in intermediate_image_tags:
-        step["command"].append(
-            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository_namespace"]}/{config["image_name"]} --image-ids imageTag={tag} || true'
-        )
 
     return step
 
