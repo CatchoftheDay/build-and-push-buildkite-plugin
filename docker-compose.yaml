@@ -1,7 +1,7 @@
 version: "3"
 services:
   lint-plugin:
-    image: 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/buildkite/plugin-linter:v2.0.4
+    image: 362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/buildkite/plugin-linter:v2.1.0
     volumes:
       - ".:/plugin"
     command: 
