@@ -101,6 +101,10 @@ def process_config() -> Dict[str, Any]:
             "type": "bool",
             "default": False,
         },
+        "additional-plugins": {
+            "type": "json",
+            "default": [],
+        },
     }
 
     def process_bool(value: str) -> bool:
@@ -153,7 +157,7 @@ def sanitise_step_key(key: str) -> str:
     return "".join([c for c in key if c.isalnum() or c in ["_", "-", ":"]])
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-branches
 def create_build_step(
     platform: str, agent: str, config: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -288,6 +292,10 @@ def create_build_step(
             }
         )
 
+    if len(config["additional-plugins"]) > 0:
+        for plugin in config["additional-plugins"]:
+            step["plugins"].append(plugin)
+
     return step
 
 
@@ -339,8 +347,11 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
             f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
         )
 
-    return step
+    if len(config["additional-plugins"]) > 0:
+        for plugin in config["additional-plugins"]:
+            step["plugins"].append(plugin)
 
+    return step
 
 def main():
     """Generate and output to stdout a pipeline for building, pushing and scanning a multi-platform container image."""
