@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import json
 from unittest import mock, main, TestCase
 
 from pipeline import (
@@ -42,6 +43,7 @@ class TestPipelineGeneration(TestCase):
         "fully-qualified-image-name": "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase",
         "push-to-ecr": True,
         "repository-namespace": "catch",
+        "additional-plugins": [],
     }
 
     maxDiff = None
@@ -118,6 +120,35 @@ class TestPipelineGeneration(TestCase):
         ns_config["repository-namespace"] = "docker.io"
 
         this.assertEqual(config, ns_config)
+
+
+    @mock.patch.dict(
+        os.environ,
+        RUNTIME_ENVS | { "BUILDKITE_PLUGIN_CONFIGURATION": json.dumps({**BUILDKITE_PLUGIN_CONFIGURATION | {'additional-plugins': [
+            {
+                "docker-login#v3.0.0": {
+                    "server": "1234.test.com",
+                    "username": "username",
+                    "password": "password",
+                },
+            }
+        ]}})}
+    )
+    def test_process_env_to_config_additional_plugins(this):
+        config = process_config()
+
+        plugin_config = this.config.copy()
+        plugin_config['additional-plugins'] = [
+            {
+                "docker-login#v3.0.0": {
+                    "server": "1234.test.com",
+                    "username": "username",
+                    "password": "password",
+                },
+            },
+        ]
+
+        this.assertEqual(config, plugin_config)
 
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
@@ -359,6 +390,25 @@ class TestPipelineGeneration(TestCase):
 
         this.assertNotIn("agent", step)
 
+
+    @mock.patch.dict(os.environ, RUNTIME_ENVS)
+    @mock.patch("pipeline.CURRENT_BRANCH", "main")
+    @mock.patch("pipeline.CURRENT_TAG", "")
+    def test_create_build_step_additional_plugins(this):
+        docker_login_plugin = {
+            "docker-login#v3.0.0": {
+                "server": "1234.test.com",
+                "username": "username",
+                "password": "password",
+            },
+        }
+
+        config = this.config.copy()
+        config['additional-plugins'] = [docker_login_plugin]
+        step = create_build_step("arm", "docker-arm", config)
+
+        expected_plugins = [{"CatchoftheDay/set-environment#v1.1.0": {}}, docker_login_plugin]
+        this.assertEqual(step["plugins"], expected_plugins)
 
 if __name__ == "__main__":
     main()
