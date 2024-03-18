@@ -39,5 +39,7 @@ configuration:
       type: string
     mutate-image-tag:
       type: boolean
+    additional-plugins:
+      type: array
   required: []
   additionalProperties: false

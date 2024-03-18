@@ -33,6 +33,7 @@ steps:
         scan-image: true
         group-key: build-and-push-0.0.1
         always-pull: false
+        additional-plugins: []
 ```
 
 
@@ -77,6 +78,19 @@ This is the key assigned to the job group that encapsulates the build tasks. Thi
 
 ### `always-pull` [boolean]
 Should the builder always attempt to pull fresh source images. This will ensure it always uses the latest available version of an image tag. Can be disabled to potentially improve build times _slightly_ if there is low risk of the upstream tagged image being updated. Default: `true`
+
+### `additional-plugins` [array]
+Pass through additional plugins to this plugin's steps, useful in cases where you may need to login to an image registry.
+```yaml
+  - label: ":docker: Build and upload container to ECR"
+    plugins:
+      - CatchoftheDay/build-and-push#v1.5.3:
+          additional-plugins:
+            - docker-login#v3.0.0:
+              server: your-image-registry.io
+              username: your_username
+              password-env: your_password-env
+```
 
 ### `composer-cache` [boolean]
 Attempt to utilize a buildkite-cached composer package cache (_not_ a cache of `vendor`) when building the image. The cache **_must_** be available at `.composer-cache`. The cache will be made available as a build context called `composer-cache` (see [utilising-package-caches](#utilising-package-caches) for how to take advantag of this in your builds). If the image builds successfully the cache will be resaved at `pipeline` level so it can be reused as a base even if the manifest changes. See the [buildkite cache plugin](https://github.com/buildkite-plugins/cache-buildkite-plugin) for further details of how this works. Default: `false`
