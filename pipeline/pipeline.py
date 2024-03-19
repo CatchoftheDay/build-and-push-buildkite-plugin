@@ -123,7 +123,7 @@ def process_config() -> Dict[str, Any]:
             config[name] = value.get("default", None)
             continue
 
-        if value["type"] == "bool":
+        if value["type"] == "bool" and isinstance(config[name], str):
             config[name] = process_bool(config[name])
         elif value["type"] == "list" and isinstance(config[name], str):
             config[name] = process_list(config[name])
