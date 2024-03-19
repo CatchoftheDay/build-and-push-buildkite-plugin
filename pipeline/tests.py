@@ -1,12 +1,12 @@
 import os
+import json
 import time
 from unittest import mock, main, TestCase
 
 from pipeline import (
     create_build_step,
     create_oci_manifest_step,
-    process_env_to_config,
-    PLUGIN_ENV_PREFIX,
+    process_config,
     BUILDKIT_VERSION,
 )
 
@@ -15,11 +15,11 @@ BUILD_TIME = int(time.time())
 
 class TestPipelineGeneration(TestCase):
     config = {
-        "image_name": "testcase",
-        "image_tag": "1234567890",
-        "mutate_image_tag": False,
+        "image-name": "testcase",
+        "image-tag": "1234567890",
+        "mutate-image-tag": False,
         # Setting BUILD_DATE like this is likely to cause issues at some point if the config generation tests takes longer than 1 second
-        "build_args": [
+        "build-args": [
             "arg1=42",
             "arg2",
             "GITHUB_TOKEN",
@@ -27,32 +27,35 @@ class TestPipelineGeneration(TestCase):
             "BUILDKITE_JOB_ID",
             f"BUILD_DATE={BUILD_TIME}",
         ],
-        "dockerfile_path": "Dockerfile",
-        "context_path": ".",
-        "build_arm": True,
-        "build_x86": False,
-        "push_branches": [],
-        "scan_image": True,
-        "group_key": "build-and-push",
-        "additional_tag": None,
-        "always_pull": True,
-        "composer_cache": False,
-        "npm_cache": False,
-        "yarn_cache": False,
-        "fully_qualified_image_name": "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase",
-        "push_to_ecr": True,
-        "repository_namespace": "catch",
+        "dockerfile-path": "Dockerfile",
+        "context-path": ".",
+        "build-arm": True,
+        "build-x86": False,
+        "push-branches": [],
+        "scan-image": True,
+        "group-key": "build-and-push",
+        "additional-tag": None,
+        "always-pull": True,
+        "composer-cache": False,
+        "npm-cache": False,
+        "yarn-cache": False,
+        "fully-qualified-image-name": "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/catch/testcase",
+        "push-to-ecr": True,
+        "repository-namespace": "catch",
     }
 
     maxDiff = None
 
+    BUILDKITE_PLUGIN_CONFIGURATION = {
+        "dockerfile-path": "Dockerfile",
+        "context-path": ".",
+        "build-args": "arg1=42,arg2",
+        "build-arm": "true",
+        "build-x86": "false",
+    }
+
     RUNTIME_ENVS = {
-        f"{PLUGIN_ENV_PREFIX}DOCKERFILE_PATH": "Dockerfile",
-        f"{PLUGIN_ENV_PREFIX}CONTEXT_PATH": ".",
-        f"{PLUGIN_ENV_PREFIX}BUILD_ARGS": "arg1=42,arg2",
-        f"{PLUGIN_ENV_PREFIX}BUILD_ARM": "true",
-        f"{PLUGIN_ENV_PREFIX}BUILD_X86": "false",
-        f"{PLUGIN_ENV_PREFIX}ARM_BUILD_REQUIRED": "true",
+        "BUILDKITE_PLUGIN_CONFIGURATION": json.dumps(BUILDKITE_PLUGIN_CONFIGURATION),
         "BUILDKITE_COMMIT": "123456789010",
         "BUILDKITE_BRANCH": "main",
         "BUILDKITE_PIPELINE_NAME": "testcase",
@@ -64,54 +67,55 @@ class TestPipelineGeneration(TestCase):
     @mock.patch.dict(os.environ, RUNTIME_ENVS)
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
     @mock.patch("pipeline.CURRENT_TAG", "")
-    def test_process_env_to_config(this):
-        config = process_env_to_config()
+    def test_process_config(this):
+        config = process_config()
 
         this.assertEqual(config, this.config)
 
     @mock.patch.dict(
         os.environ,
-        dict({f"{PLUGIN_ENV_PREFIX}PUSH_BRANCHES": "testing"}, **RUNTIME_ENVS),
+        RUNTIME_ENVS | { "BUILDKITE_PLUGIN_CONFIGURATION": json.dumps({**BUILDKITE_PLUGIN_CONFIGURATION | {'push-branches': "testing"}})}
     )
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
     @mock.patch("pipeline.CURRENT_TAG", "")
-    def test_process_env_to_config_no_push_branch(this):
-        config = process_env_to_config()
+    def test_process_config_no_push_branch(this):
+        config = process_config()
 
         no_config = this.config.copy()
-        no_config["push_branches"] = ["testing"]
-        no_config["push_to_ecr"] = False
+        no_config["push-branches"] = ["testing"]
+        no_config["push-to-ecr"] = False
 
         this.assertEqual(config, no_config)
 
     @mock.patch.dict(
         os.environ,
-        dict({f"{PLUGIN_ENV_PREFIX}PUSH_BRANCHES": "testing,main"}, **RUNTIME_ENVS),
+        RUNTIME_ENVS | { "BUILDKITE_PLUGIN_CONFIGURATION": json.dumps({**BUILDKITE_PLUGIN_CONFIGURATION | {'push-branches': "testing,main"}})}
     )
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
     @mock.patch("pipeline.CURRENT_TAG", "")
-    def test_process_env_to_config_no_push_branch(this):
-        config = process_env_to_config()
+    def test_process_config_no_push_branch(this):
+        config = process_config()
 
         yes_config = this.config.copy()
-        yes_config["push_branches"] = ["testing", "main"]
+        yes_config["push-branches"] = ["testing", "main"]
 
         this.assertEqual(config, yes_config)
 
+
     @mock.patch.dict(
         os.environ,
-        dict({f"{PLUGIN_ENV_PREFIX}REPOSITORY_NAMESPACE": "docker.io"}, **RUNTIME_ENVS),
+        RUNTIME_ENVS | { "BUILDKITE_PLUGIN_CONFIGURATION": json.dumps({**BUILDKITE_PLUGIN_CONFIGURATION | {'repository-namespace': "docker.io"}})}
     )
     @mock.patch("pipeline.CURRENT_BRANCH", "main")
     @mock.patch("pipeline.CURRENT_TAG", "")
-    def test_process_env_to_config_different_namespace(this):
-        config = process_env_to_config()
+    def test_process_config_different_namespace(this):
+        config = process_config()
 
         ns_config = this.config.copy()
         ns_config[
-            "fully_qualified_image_name"
+            "fully-qualified-image-name"
         ] = "362995399210.dkr.ecr.ap-southeast-2.amazonaws.com/docker.io/testcase"
-        ns_config["repository_namespace"] = "docker.io"
+        ns_config["repository-namespace"] = "docker.io"
 
         this.assertEqual(config, ns_config)
 
@@ -150,7 +154,7 @@ class TestPipelineGeneration(TestCase):
         agent = "docker-arm"
 
         config = this.config.copy()
-        config["mutate_image_tag"] = True
+        config["mutate-image-tag"] = True
         step = create_oci_manifest_step(config)
 
         step = create_build_step(platform, agent, config)
@@ -204,9 +208,7 @@ class TestPipelineGeneration(TestCase):
 
     @mock.patch.dict(
         os.environ,
-        dict(
-            {f"BUILDKITE_TAG": "v1.0.0", "BUILDKITE_BRANCH": "v1.0.0"}, **RUNTIME_ENVS
-        ),
+        RUNTIME_ENVS | { "BUILDKITE_TAG": "v1.0.0", "BUILDKITE_BRANCH": "v1.0.0" }
     )
     @mock.patch("pipeline.CURRENT_BRANCH", "v1.0.0")
     @mock.patch("pipeline.CURRENT_TAG", "v1.0.0")
@@ -242,7 +244,7 @@ class TestPipelineGeneration(TestCase):
         agent = "docker-arm"
 
         config = this.config.copy()
-        config["push_to_ecr"] = False
+        config["push-to-ecr"] = False
         step = create_build_step(platform, agent, config)
 
         this.assertEqual(step["label"], ":docker: Build arm image")
@@ -285,7 +287,7 @@ class TestPipelineGeneration(TestCase):
     @mock.patch("pipeline.CURRENT_TAG", "")
     def test_create_manifest_step_mutate_tags(this):
         config = this.config.copy()
-        config["mutate_image_tag"] = True
+        config["mutate-image-tag"] = True
         step = create_oci_manifest_step(config)
 
         this.assertEqual(
@@ -307,7 +309,7 @@ class TestPipelineGeneration(TestCase):
     @mock.patch("pipeline.CURRENT_TAG", "")
     def test_create_manifest_step_multi_arch(this):
         multi_arch_config = this.config.copy()
-        multi_arch_config["build_x86"] = True
+        multi_arch_config["build-x86"] = True
 
         step = create_oci_manifest_step(multi_arch_config)
 
@@ -329,9 +331,7 @@ class TestPipelineGeneration(TestCase):
 
     @mock.patch.dict(
         os.environ,
-        dict(
-            {f"BUILDKITE_TAG": "v1.0.0", "BUILDKITE_BRANCH": "v1.0.0"}, **RUNTIME_ENVS
-        ),
+        RUNTIME_ENVS | { "BUILDKITE_TAG": "v1.0.0", "BUILDKITE_BRANCH": "v1.0.0" }
     )
     @mock.patch(
         "pipeline.CURRENT_BRANCH", "v1.0.0"
@@ -339,7 +339,7 @@ class TestPipelineGeneration(TestCase):
     @mock.patch("pipeline.CURRENT_TAG", "v1.0.0")
     def test_create_manifest_step_multi_arch_tag(this):
         multi_arch_config = this.config.copy()
-        multi_arch_config["build_x86"] = True
+        multi_arch_config["build-x86"] = True
 
         step = create_oci_manifest_step(multi_arch_config)
 

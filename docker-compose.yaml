@@ -17,14 +17,14 @@ services:
       - /plugin/hooks/command
 
   lint-python:
-    image: public.ecr.aws/docker/library/python:3.7
+    image: public.ecr.aws/docker/library/python:3.9
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
     command: sh -c "python3 -m pip install -r requirements.dev.txt && python3 -m pylint pipeline/pipeline.py --ignore-long-lines \".*\""
 
   tests-python:
-    image: public.ecr.aws/docker/library/python:3.7
+    image: public.ecr.aws/docker/library/python:3.9
     volumes:
       - ".:/plugin:ro"
     working_dir: /plugin
