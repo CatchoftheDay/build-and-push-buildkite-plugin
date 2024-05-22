@@ -1,18 +1,28 @@
 steps:
   - group: Lint
+    key: lint
     steps:
       - command: make lint-plugin
-        label: "Lint :buildkite: plugin configuration"
+        label: ":buildkite: Lint plugin configuration"
       
       - command: make lint-shell
-        label: "Lint :bash: scripts"
+        label: ":bash: Lint scripts"
 
       - command: make lint-python
-        label: "Lint :python: scripts"
+        label: ":python: Lint scripts"
         key: lint-python
 
   - group: Tests
+    depends_on:
+      - lint
     steps:
       - command: make tests
-        label: "Test :python: tests"
-        depends_on: lint-python
+        label: ":python: Test scripts"
+
+      - label: ":python: Test integration"
+        trigger: echoserver
+        build:
+          message: "Triggered from ${BUILDKITE_PIPELINE_NAME}: ${BUILDKITE_MESSAGE}"
+          branch: master
+          env:
+            BUILD_AND_PUSH_BUILDKITE_PLUGIN_VERSION: ${BUILDKITE_TAG:-${BUILDKITE_COMMIT:0:10}}
