@@ -156,19 +156,26 @@ def sanitise_step_key(key: str) -> str:
     """Step keys only accept alphanumeric characters, underscores, dashes and colons"""
     return "".join([c for c in key if c.isalnum() or c in ["_", "-", ":"]])
 
+def sanitise_image_tag(tag: str) -> str:
+    """Image tags only accept alphanumeric characters, underscores, periods and dashes"""
+    # Replace slashes with dashes to keep hierarchy
+    tag = tag.replace("/", "-")
+    return "".join([c for c in tag if c.isalnum() or c in ["_", "-", "."]])
 
 # pylint: disable=too-many-locals,too-many-branches
 def create_build_step(
     platform: str, agent: str, config: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Create a step stub to build and push a container image for a given platform"""
-    platform_image: str = f'{config["fully-qualified-image-name"]}:multi-platform-{config["image-tag"]}-{platform}'
+    image_tag = sanitise_image_tag(config["image-tag"])
+
+    platform_image: str = f'{config["fully-qualified-image-name"]}:multi-platform-{image_tag}-{platform}'
 
     cache_from_tags: List[str] = sorted(
         set(
             [
-                config["image-tag"],
-                CURRENT_BRANCH,
+                image_tag,
+                sanitise_image_tag(CURRENT_BRANCH),
                 "master",
                 "main",
             ]
@@ -213,7 +220,7 @@ def create_build_step(
             "wizcli auth --id $$WIZ_CLIENT_ID --secret $$WIZ_CLIENT_SECRET",
             f'wizcli docker scan --image {platform_image} -p "Container Scanning" -p "Secret Scanning" --tag pipeline={os.environ["BUILDKITE_PIPELINE_NAME"]} --tag architecture={platform} --tag pipeline_run={os.environ["BUILDKITE_BUILD_NUMBER"]} > out 2>&1 | true; SCAN_STATUS=$${{PIPESTATUS[0]}}',
             # pylint: disable=anomalous-backslash-in-string
-            f'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [{config["image-name"]}:{config["image-tag"]}] ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {"".join(item for item in config["image-name"] if item.isalnum())}-{"".join(item for item in config["image-tag"] if item.isalnum())}-{platform}-security-scan; fi',
+            f'if [[ ! $$SCAN_STATUS -eq 0 ]]; then echo -e "**Container scan report [{config["image-name"]}:{image_tag}] ({platform})**\n\n<details><summary></summary>\n\n\`\`\`term\n$(cat out**)\`\`\`\n\n</details>" | buildkite-agent annotate --style error --context {"".join(item for item in config["image-name"] if item.isalnum())}-{"".join(item for item in config["image-tag"] if item.isalnum())}-{platform}-security-scan; fi',
         ]
         if BLOCK_ON_CONTAINER_SCAN:
             scan_steps.append(
@@ -301,8 +308,10 @@ def create_build_step(
 
 def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     """Create a step stub to create a container manifest and push it to ECR"""
+    image_tag = sanitise_image_tag(config["image-tag"])
+
     images: List[str] = [
-        f'{config["fully-qualified-image-name"]}:multi-platform-{config["image-tag"]}-{platform}'
+        f'{config["fully-qualified-image-name"]}:multi-platform-{image_tag}-{platform}'
         for platform, _ in BUILD_PLATFORMS.items()
         if config[f"build-{platform}"]
     ]
@@ -313,12 +322,12 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     ]
 
     basic_actions = [
-        f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:{config["image-tag"]} {" ".join(images)}',
+        f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:{image_tag} {" ".join(images)}',
     ]
     if config["mutate-image-tag"]:
         basic_actions.insert(
             0,
-            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag={config["image-tag"]} || true',
+            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag={image_tag} || true',
         )
 
     step = {
@@ -330,21 +339,23 @@ def create_oci_manifest_step(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     if config["additional-tag"]:
+        additional_tag = sanitise_image_tag(config["additional-tag"])
         if config["mutate-image-tag"]:
             step["command"].append(
-                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag={config["additional-tag"]} || true'
+                f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag={additional_tag} || true'
             )
         step["command"].append(
-            f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:{config["additional-tag"]} {" ".join(images)}'
+            f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:{additional_tag} {" ".join(images)}'
         )
 
     if CURRENT_BRANCH != "":
+        branch_tag = sanitise_image_tag(CURRENT_BRANCH)
         # Always remove the cache_branch tagged image so we can update it in immutable repositories as cache for the next build
         step["command"].append(
-            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag=cache_{CURRENT_BRANCH} || true'
+            f'aws ecr batch-delete-image --registry-id {ECR_ACCOUNT} --repository-name {config["repository-namespace"]}/{config["image-name"]} --image-ids imageTag=cache_{branch_tag} || true'
         )
         step["command"].append(
-            f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:cache_{CURRENT_BRANCH} {" ".join(images)}'
+            f'docker buildx imagetools create -t {config["fully-qualified-image-name"]}:cache_{branch_tag} {" ".join(images)}'
         )
 
     if len(config["additional-plugins"]) > 0:
