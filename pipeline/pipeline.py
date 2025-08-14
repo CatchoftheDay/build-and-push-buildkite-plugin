@@ -19,8 +19,8 @@ PLUGIN_NAME: str = "build-and-push"
 
 BUILD_PLATFORMS: Dict[str, str] = {
     # platform => buildkite agent name
-    "arm": "aws/docker-arm",
-    "x86": "aws/docker",
+    "arm": "docker-arm",
+    "x86": "docker",
 }
 
 BLOCK_ON_CONTAINER_SCAN = (
